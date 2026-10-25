@@ -1,4 +1,4 @@
-package com.example.nonprofit;
+package com.example.nonprofit.controllers;
 
 import java.time.Instant;
 import java.util.Map;

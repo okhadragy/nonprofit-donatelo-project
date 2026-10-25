@@ -1,0 +1,507 @@
+@startuml
+' =====================================================
+' 1. DOMAIN MODEL
+' Top-to-bottom. "--" = vertical link, "-" = horizontal link
+' =====================================================
+top to bottom direction
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam nodesep 40
+skinparam ranksep 50
+skinparam package {
+  BackgroundColor White
+  BorderColor #64748b
+}
+skinparam class {
+  BackgroundColor #F8FAFC
+  BorderColor #475569
+  ArrowColor #475569
+}
+hide empty members
+
+package "Users" as Users {
+  abstract class User {
+    - id: Long
+    - name: String
+    - email: String
+    - username: String
+    - password: String
+    - role: String
+  }
+  class Donor
+  class Volunteer {
+    - status: String
+  }
+  class Beneficiary {
+    - city: String
+    - category: String
+    - status: String
+  }
+  class Admin
+
+  User <|-- Donor
+  User <|-- Volunteer
+  User <|-- Beneficiary
+  User <|-- Admin
+}
+
+package "Donations" as Donations {
+  class Donation {
+    - id: Long
+    - amount: BigDecimal
+    - date: Date
+    - method: String
+    + getDescription(): String
+    + getCost(): double
+  }
+  class DonationType {
+    - id: Long
+    - name: String
+  }
+}
+
+package "Volunteer Management" as VolunteerModel {
+  class Qualification {
+    - id: Long
+    - name: String
+    - description: String
+  }
+  class Role {
+    - id: Long
+    - name: String
+    - description: String
+  }
+  class VolunteerAssignment {
+    - id: Long
+    - hoursWorked: double
+  }
+}
+
+package "Beneficiary Resources" as Resources {
+  class BeneficiaryCategory {
+    - id: Long
+    - name: String
+  }
+  class ResourceDistribution {
+    - id: Long
+    - quantity: int
+    - distributionDate: Date
+  }
+  class Resource {
+    - id: Long
+    - name: String
+    - description: String
+    - category: String
+  }
+}
+
+package "Events" as Events {
+  class EventCategory {
+    - id: Long
+    - name: String
+  }
+  class Event {
+    - id: Long
+    - title: String
+    - date: Date
+    - location: String
+    - status: String
+    + getDescription(): String
+  }
+  class Ticket {
+    - id: Long
+    - name: String
+    - price: BigDecimal
+  }
+  class EventRegistration {
+    - id: Long
+    - attendeeName: String
+    - attendanceStatus: String
+  }
+}
+
+' ---- Donor column
+Donor "1" -- "0..*" Donation : makes
+Donation "0..*" - "1" DonationType : classified by
+
+' ---- Volunteer column
+Volunteer "0..*" -- "0..*" Qualification : has
+Volunteer "0..*" -- "0..*" Role : prefers
+Volunteer "1" -- "0..*" VolunteerAssignment : receives
+Role "1" - "0..*" VolunteerAssignment : assigned role
+VolunteerAssignment "0..*" -- "1" Event : requires
+
+' ---- Beneficiary column
+BeneficiaryCategory "1" - "0..*" Beneficiary : classifies
+Beneficiary "1" -- "0..*" ResourceDistribution : receives
+Resource "1" - "0..*" ResourceDistribution : distributed as
+
+' ---- Events
+EventCategory "1" - "0..*" Event : classifies
+Event "1" -- "0..*" Ticket : offers
+Event "1" -- "0..*" EventRegistration : has
+Ticket "1" - "0..*" EventRegistration : selected for
+
+' ---- Layout hints: keep the three user branches side by side
+Donor -[hidden]right- Volunteer
+Volunteer -[hidden]right- Beneficiary
+
+
+
+
+' =====================================================
+' 2. DESIGN PATTERNS
+' =====================================================
+top to bottom direction
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam nodesep 40
+skinparam ranksep 50
+skinparam package {
+  BackgroundColor White
+  BorderColor #64748b
+}
+skinparam class {
+  BackgroundColor #F8FAFC
+  BorderColor #475569
+  ArrowColor #475569
+}
+hide empty members
+
+' Entities from the domain model (collapsed)
+class Donation
+class Event
+
+' ---------- STRATEGY ----------
+package "Strategy Pattern" as Strategy {
+  interface DonationStrategy {
+    + process(amount: double): boolean
+  }
+  class CashDonation
+  class CardDonation
+  class BankTransferDonation
+
+  DonationStrategy <|.. CashDonation
+  DonationStrategy <|.. CardDonation
+  DonationStrategy <|.. BankTransferDonation
+}
+
+' ---------- FACTORY + SINGLETON ----------
+package "Factory + Singleton" as Factory {
+  class DonationStrategyFactory {
+    - {static} instance: DonationStrategyFactory
+    - DonationStrategyFactory()
+    + {static} getInstance(): DonationStrategyFactory
+    + createDonation(method: String): DonationStrategy
+  }
+
+  class DocumentFactory {
+    - {static} instance: DocumentFactory
+    - DocumentFactory()
+    + {static} getInstance(): DocumentFactory
+    + createDocument(type: String): Document
+  }
+
+  interface Document {
+    + generate(): String
+  }
+  class ReceiptDocument {
+    + generate(): String
+  }
+  class TaxDocument {
+    + generate(): String
+  }
+
+  Document <|.. ReceiptDocument
+  Document <|.. TaxDocument
+  DocumentFactory ..> Document : creates
+}
+
+' ---------- DONATION OBSERVER ----------
+package "Donation Observer" as DonationObserverPackage {
+  class DonationSubject {
+    - observers: List
+    + addObserver(observer: DonationObserver)
+    + removeObserver(observer: DonationObserver)
+    + notifyObservers()
+  }
+  interface DonationObserver {
+    + update(message: String)
+  }
+  class DonationEmailNotifier {
+    + update(message: String)
+  }
+
+  DonationSubject o-- "0..*" DonationObserver : notifies
+  DonationObserver <|.. DonationEmailNotifier
+}
+
+' ---------- EVENT OBSERVER ----------
+package "Event Observer" as EventObserverPackage {
+  class EventSubject {
+    - observers: List
+    + addObserver(observer: EventObserver)
+    + removeObserver(observer: EventObserver)
+    + notifyObservers()
+  }
+  interface EventObserver {
+    + update(message: String)
+  }
+  class EventEmailNotifier {
+    + update(message: String)
+  }
+
+  EventSubject o-- "0..*" EventObserver : notifies
+  EventObserver <|.. EventEmailNotifier
+}
+
+' ---------- DECORATOR ----------
+package "Event Decorator" as Decorator {
+  interface EventComponent {
+    + getDescription(): String
+  }
+  abstract class EventDecorator {
+    # event: EventComponent
+    + EventDecorator(event: EventComponent)
+    + getDescription(): String
+  }
+  class FundraisingDecorator
+  class ReminderDecorator
+  class FollowUpDecorator
+
+  EventComponent <|.. EventDecorator
+  EventDecorator o-- EventComponent : wraps
+  EventDecorator <|-- FundraisingDecorator
+  EventDecorator <|-- ReminderDecorator
+  EventDecorator <|-- FollowUpDecorator
+}
+
+' ---------- CROSS-PATTERN LINKS (kept to a minimum) ----------
+Donation ..> DonationStrategy : uses
+Donation ..> Document : uses for documents
+DonationStrategyFactory ..> DonationStrategy : creates
+DonationSubject ..> Donation : monitors
+
+EventComponent <|.. Event
+EventSubject ..> Event : monitors
+
+' ---------- LAYOUT ----------
+' Donation side on the left, Event side on the right
+Donation -[hidden]down- DonationSubject
+Event -[hidden]down- EventSubject
+Donation -[hidden]right- Event
+
+note bottom of DonationStrategyFactory
+  Private constructor, one static
+  instance, getInstance() returns it.
+  Creates a strategy from the method.
+end note
+
+note bottom of DocumentFactory
+  Private constructor, one static
+  instance, getInstance() returns it.
+  Creates ReceiptDocument or TaxDocument.
+end note
+
+
+
+
+' =====================================================
+' 3. LAYERED ARCHITECTURE
+' Each feature reads left to right:
+' Page -> Controller -> Service -> Repository
+' =====================================================
+left to right direction
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam nodesep 25
+skinparam ranksep 60
+skinparam package {
+  BackgroundColor White
+  BorderColor #64748b
+}
+skinparam class {
+  BackgroundColor #F8FAFC
+  BorderColor #475569
+  ArrowColor #475569
+}
+hide empty members
+
+' ---------- VIEW (React) ----------
+package "MVC - View (React)" as Views {
+  class ResourcePage {
+    - config: Object
+    - rows: Array
+    + search()
+    + add()
+    + edit()
+    + remove()
+  }
+  class DonationPage
+  class EventPage
+  class VolunteerPage
+  class BeneficiaryPage
+  class Dashboard
+
+  ResourcePage <|-- DonationPage
+  ResourcePage <|-- EventPage
+  ResourcePage <|-- VolunteerPage
+  ResourcePage <|-- BeneficiaryPage
+}
+
+' ---------- CONTROLLERS ----------
+package "MVC - Controllers" as Controllers {
+  class DonationController <<RestController>> {
+    + getAll()
+    + getById(id: Long)
+    + create()
+    + update(id: Long)
+    + delete(id: Long)
+  }
+  class EventController <<RestController>> {
+    + getAll()
+    + create()
+    + update(id: Long)
+    + delete(id: Long)
+  }
+  class VolunteerController <<RestController>> {
+    + getAll()
+    + create()
+    + update(id: Long)
+    + delete(id: Long)
+  }
+  class BeneficiaryController <<RestController>> {
+    + getAll()
+    + create()
+    + update(id: Long)
+    + delete(id: Long)
+  }
+  class ResourceController <<RestController>> {
+    + getAll()
+    + create()
+    + distribute()
+  }
+}
+
+' ---------- SERVICES ----------
+package "Services" as Services {
+  class DonationService <<Service>> {
+    + getAll(): List<Donation>
+    + getById(id: Long): Donation
+    + create(donation: Donation): Donation
+    + update(id: Long, donation: Donation): Donation
+    + delete(id: Long)
+    + processDonation(amount: double, method: String): boolean
+  }
+  class EventService <<Service>> {
+    + getAll(): List<Event>
+    + create(event: Event): Event
+    + update(id: Long, event: Event): Event
+    + delete(id: Long)
+  }
+  class VolunteerService <<Service>> {
+    + getAll(): List<Volunteer>
+    + create(volunteer: Volunteer): Volunteer
+    + update(id: Long, volunteer: Volunteer): Volunteer
+    + delete(id: Long)
+  }
+  class BeneficiaryService <<Service>> {
+    + getAll(): List<Beneficiary>
+    + create(beneficiary: Beneficiary): Beneficiary
+    + update(id: Long, beneficiary: Beneficiary): Beneficiary
+    + delete(id: Long)
+  }
+  class ResourceService <<Service>> {
+    + getAll(): List<Resource>
+    + create(resource: Resource): Resource
+    + distribute(resourceId: Long, beneficiaryId: Long)
+  }
+}
+
+' ---------- REPOSITORIES ----------
+package "Repositories (Spring Data JPA)" as Repositories {
+  interface DonationRepository {
+    + findAll(): List<Donation>
+    + findById(id: Long): Optional<Donation>
+    + save(donation: Donation): Donation
+    + deleteById(id: Long)
+  }
+  interface EventRepository {
+    + findAll(): List<Event>
+    + findById(id: Long): Optional<Event>
+    + save(event: Event): Event
+    + deleteById(id: Long)
+  }
+  interface VolunteerRepository {
+    + findAll(): List<Volunteer>
+    + findById(id: Long): Optional<Volunteer>
+    + save(volunteer: Volunteer): Volunteer
+  }
+  interface BeneficiaryRepository {
+    + findAll(): List<Beneficiary>
+    + findById(id: Long): Optional<Beneficiary>
+    + save(beneficiary: Beneficiary): Beneficiary
+  }
+  interface ResourceRepository {
+    + findAll(): List<Resource>
+    + findById(id: Long): Optional<Resource>
+    + save(resource: Resource): Resource
+  }
+  interface UserRepository {
+    + findByUsername(username: String): Optional<User>
+    + existsByUsername(username: String): boolean
+    + save(user: User): User
+  }
+}
+
+note bottom of Repositories
+  Each repository extends JpaRepository<T, Long>,
+  so Spring Data JPA provides the CRUD methods.
+end note
+
+' ---------- PATTERN COLLABORATORS (collapsed, see diagram 2) ----------
+package "Patterns used by services" as PatternStubs {
+  class DonationStrategyFactory
+  interface DonationStrategy
+  class DocumentFactory
+  class DonationSubject
+  class EventSubject
+  interface EventComponent
+}
+
+
+' ---------- ONE CLEAN CHAIN PER FEATURE ----------
+DonationPage ..> DonationController
+DonationController ..> DonationService
+DonationService ..> DonationRepository
+
+EventPage ..> EventController
+EventController ..> EventService
+EventService ..> EventRepository
+
+VolunteerPage ..> VolunteerController
+VolunteerController ..> VolunteerService
+VolunteerService ..> VolunteerRepository
+
+BeneficiaryPage ..> BeneficiaryController
+BeneficiaryController ..> BeneficiaryService
+BeneficiaryService ..> BeneficiaryRepository
+
+ResourceController ..> ResourceService
+ResourceService ..> ResourceRepository
+
+' ---------- SERVICE -> PATTERN DEPENDENCIES ----------
+DonationService ..> DonationStrategyFactory : obtains strategy
+DonationService ..> DonationStrategy : processes donation
+DonationService ..> DocumentFactory : creates documents
+DonationService ..> DonationSubject : notifies observers
+EventService ..> EventSubject : notifies observers
+EventService ..> EventComponent : decorates events
+
+' ---------- LAYOUT HINTS ----------
+Dashboard -[hidden]down- DonationPage
+UserRepository -[hidden]down- EventRepository
+@enduml

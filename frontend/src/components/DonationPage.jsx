@@ -4,6 +4,7 @@ import {
   createDonation,
   updateDonation,
   deleteDonation,
+  generateDonationDocument,
 } from "../api.js";
 import ConfirmModal from "./ConfirmModal.jsx";
 
@@ -21,6 +22,8 @@ export default function DonationPage({ donors, donationTypes }) {
   const [deletingRow, setDeletingRow] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [query, setQuery] = useState("");
+  const [documentResult, setDocumentResult] = useState(null);
+  const [generatingDocument, setGeneratingDocument] = useState(null);
 
   const loadDonations = () => {
     setLoading(true);
@@ -107,6 +110,33 @@ export default function DonationPage({ donors, donationTypes }) {
     }
   };
 
+  const generateDocument = async (row, type) => {
+    setGeneratingDocument(`${row.id}-${type}`);
+    setError(null);
+    try {
+      const content = await generateDonationDocument(row.id, type);
+      setDocumentResult({
+        title: `${type === "tax" ? "Tax document" : "Receipt"} for ${row.donorName || "donation"}`,
+        content,
+      });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setGeneratingDocument(null);
+    }
+  };
+
+  const downloadDocument = () => {
+    if (!documentResult) return;
+    const blob = new Blob([documentResult.content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${documentResult.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const visible = rows.filter((r) =>
     Object.values(r).join(" ").toLowerCase().includes(query.toLowerCase())
   );
@@ -162,6 +192,20 @@ export default function DonationPage({ donors, donationTypes }) {
                       <td className="actions">
                         <button className="btn small" onClick={() => startEdit(row)}>
                           Edit
+                        </button>
+                        <button
+                          className="btn small"
+                          onClick={() => generateDocument(row, "receipt")}
+                          disabled={generatingDocument !== null}
+                        >
+                          {generatingDocument === `${row.id}-receipt` ? "Generating…" : "Receipt"}
+                        </button>
+                        <button
+                          className="btn small"
+                          onClick={() => generateDocument(row, "tax")}
+                          disabled={generatingDocument !== null}
+                        >
+                          {generatingDocument === `${row.id}-tax` ? "Generating…" : "Tax"}
                         </button>
                         <button className="btn small danger" onClick={() => remove(row)}>
                           Delete
@@ -262,6 +306,29 @@ export default function DonationPage({ donors, donationTypes }) {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {documentResult && (
+        <div className="overlay" onClick={() => setDocumentResult(null)}>
+          <section
+            className="modal document-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="document-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="document-title">{documentResult.title}</h2>
+            <pre className="document-content">{documentResult.content}</pre>
+            <div className="modal-actions">
+              <button type="button" className="btn" onClick={() => setDocumentResult(null)}>
+                Close
+              </button>
+              <button type="button" className="btn primary" onClick={downloadDocument}>
+                Download .txt
+              </button>
+            </div>
+          </section>
         </div>
       )}
 

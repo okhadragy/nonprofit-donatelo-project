@@ -22,6 +22,13 @@ export async function authenticatedFetch(path, options = {}) {
 }
 
 
+export async function fetchDonationTypes() {
+  const res = await authenticatedFetch(`/donation-types`);
+  if (!res.ok) throw new Error(`Failed to fetch donation types`);
+  return res.json();
+}
+
+
 export async function fetchStatus() {
   const res = await authenticatedFetch(`/status`);
   if (!res.ok) throw new Error(`Backend responded with ${res.status}`);

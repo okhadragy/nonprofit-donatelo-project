@@ -1,12 +1,14 @@
 
 import { useEffect, useState } from "react";
-import { fetchStatus } from "./api.js";
+import { fetchStatus, fetchDonationTypes } from "./api.js";
 import { initialData } from "./data.js";
 import { resources } from "./config.js";
 import Sidebar from "./components/Sidebar.jsx";
 import Overview from "./components/Overview.jsx";
 import ResourcePage from "./components/ResourcePage.jsx";
 import AuthPage from "./components/AuthPage.jsx";
+
+
 
 export default function App() {
   const [token, setToken] = useState(
@@ -15,6 +17,7 @@ export default function App() {
   const [page, setPage] = useState("overview");
   const [data, setData] = useState(initialData);
   const [backend, setBackend] = useState("checking");
+  const [donationTypes, setDonationTypes] = useState([]);
 
   const checkBackend = () => {
     setBackend("checking");
@@ -27,6 +30,18 @@ export default function App() {
     if (token) {
       checkBackend();
     }
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    checkBackend();
+
+    fetchDonationTypes()
+      .then(setDonationTypes)
+      .catch((error) => {
+        console.error("Could not load donation types:", error);
+      });
   }, [token]);
 
   const handleAuthenticated = (newToken) => {
@@ -71,7 +86,21 @@ export default function App() {
         ) : (
           <ResourcePage
             key={page}
-            config={resources[page]}
+            config={
+              page === "donations"
+                ? {
+                  ...resources.donations,
+                  fields: resources.donations.fields.map((field) =>
+                    field.key === "type"
+                      ? {
+                        ...field,
+                        options: donationTypes.map((type) => type.name),
+                      }
+                      : field
+                  ),
+                }
+                : resources[page]
+            }
             rows={data[page]}
             setRows={setRows(page)}
           />

@@ -1,19 +1,19 @@
-package com.example.nonprofit.models;
+package com.example.nonprofit.models.users;
 
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 
 @Entity
-@DiscriminatorValue("ADMIN")
-public class Admin extends User {
+@DiscriminatorValue("DONOR")
+public class Donor extends User {
 
-    protected Admin() {}
+    protected Donor() {}
 
-    public Admin(
+    public Donor(
             String name,
             String email,
             String username,
             String password) {
-        super(name, email, username, password, "ADMIN");
+        super(name, email, username, password, "DONOR");
     }
 }

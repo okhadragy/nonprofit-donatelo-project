@@ -3,8 +3,8 @@ package com.example.nonprofit.services;
 import com.example.nonprofit.dto.AuthResponse;
 import com.example.nonprofit.dto.LoginRequest;
 import com.example.nonprofit.dto.RegisterRequest;
-import com.example.nonprofit.models.Donor;
-import com.example.nonprofit.models.User;
+import com.example.nonprofit.models.users.Donor;
+import com.example.nonprofit.models.users.User;
 import com.example.nonprofit.repositories.UserRepository;
 import com.example.nonprofit.security.JwtService;
 

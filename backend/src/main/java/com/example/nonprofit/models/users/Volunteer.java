@@ -1,4 +1,4 @@
-package com.example.nonprofit.models;
+package com.example.nonprofit.models.users;
 
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;

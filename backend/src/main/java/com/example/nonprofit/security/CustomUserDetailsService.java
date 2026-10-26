@@ -1,6 +1,6 @@
 package com.example.nonprofit.security;
 
-import com.example.nonprofit.models.User;
+import com.example.nonprofit.models.users.User;
 import com.example.nonprofit.repositories.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

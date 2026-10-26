@@ -10,7 +10,8 @@ export const resources = {
       { key: "donor", label: "Donor", type: "text" },
       { key: "amount", label: "Amount (EGP)", type: "number", format: money },
       { key: "date", label: "Date", type: "date" },
-      { key: "method", label: "Method", type: "select", options: ["Cash", "Card", "Bank transfer"] },
+      { key: "method", label: "Method", type: "select", options: ["Cash", "Card", "Check"] },
+      { key: "type", label: "Type", type: "select", options: [] },
     ],
   },
   volunteers: {

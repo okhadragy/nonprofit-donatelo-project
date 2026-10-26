@@ -1,7 +1,8 @@
 package com.example.nonprofit.repositories;
 
-import com.example.nonprofit.models.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.example.nonprofit.models.users.User;
 
 import java.util.Optional;
 

@@ -181,11 +181,11 @@ package "Strategy Pattern" as Strategy {
   }
   class CashDonation
   class CardDonation
-  class BankTransferDonation
+  class CheckDonation
 
   DonationStrategy <|.. CashDonation
   DonationStrategy <|.. CardDonation
-  DonationStrategy <|.. BankTransferDonation
+  DonationStrategy <|.. CheckDonation
 }
 
 ' ---------- FACTORY + SINGLETON ----------

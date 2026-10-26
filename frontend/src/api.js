@@ -107,6 +107,19 @@ export async function deleteDonation(id) {
   }
 }
 
+export async function generateDonationDocument(id, type) {
+  const res = await authenticatedFetch(
+    `/donations/${id}/document?type=${encodeURIComponent(type)}`
+  );
+  const document = await res.text();
+
+  if (!res.ok) {
+    throw new Error(document || `Failed to generate ${type} document (${res.status})`);
+  }
+
+  return document;
+}
+
 // --- Donors ---
 
 export async function fetchDonors() {

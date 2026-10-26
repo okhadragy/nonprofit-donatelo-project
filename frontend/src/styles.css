@@ -98,6 +98,18 @@ input, select {
 .modal label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; font-size: 0.9rem; }
 .modal input, .modal select { font-weight: 400; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+.document-modal { max-width: 560px; }
+.document-content {
+  margin: 0;
+  padding: 16px;
+  max-height: 55vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  background: #f8fafb;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font: inherit;
+}
 
 /* Alarm / Confirmation Modal */
 .alarm-modal {

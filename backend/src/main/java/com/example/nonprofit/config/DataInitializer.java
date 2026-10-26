@@ -4,10 +4,10 @@ import com.example.nonprofit.models.donations.DonationType;
 import com.example.nonprofit.repositories.DonationTypeRepository;
 import com.example.nonprofit.repositories.UserRepository;
 import com.example.nonprofit.models.users.Admin;
+import com.example.nonprofit.models.users.Donor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
@@ -50,6 +50,23 @@ public class DataInitializer {
                 );
                 userRepository.save(admin);
 
+            }
+
+            // Seed sample donors
+            List<String[]> donors = List.of(
+                new String[]{"Ahmed Hassan", "ahmed@example.com", "ahmed"},
+                new String[]{"Sara Ali", "sara@example.com", "sara"},
+                new String[]{"Mona Khalil", "mona@example.com", "mona"}
+            );
+
+            for (String[] d : donors) {
+                if (!userRepository.existsByUsername(d[2])) {
+                    Donor donor = new Donor(
+                        d[0], d[1], d[2],
+                        passwordEncoder.encode("Donor1234")
+                    );
+                    userRepository.save(donor);
+                }
             }
 
             

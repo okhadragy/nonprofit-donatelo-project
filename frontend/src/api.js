@@ -63,3 +63,54 @@ export function register(user) {
   return authRequest("register", user);
 }
 
+// --- Donation CRUD ---
+
+export async function fetchDonations() {
+  const res = await authenticatedFetch(`/donations`);
+  if (!res.ok) throw new Error(`Failed to fetch donations`);
+  return res.json();
+}
+
+export async function createDonation(data) {
+  const res = await authenticatedFetch(`/donations`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to create donation (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function updateDonation(id, data) {
+  const res = await authenticatedFetch(`/donations/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to update donation (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function deleteDonation(id) {
+  const res = await authenticatedFetch(`/donations/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to delete donation (${res.status})`);
+  }
+}
+
+// --- Donors ---
+
+export async function fetchDonors() {
+  const res = await authenticatedFetch(`/donors`);
+  if (!res.ok) throw new Error(`Failed to fetch donors`);
+  return res.json();
+}

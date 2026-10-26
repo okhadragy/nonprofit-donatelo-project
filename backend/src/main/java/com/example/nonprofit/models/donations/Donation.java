@@ -1,5 +1,6 @@
 package com.example.nonprofit.models.donations;
 
+import com.example.nonprofit.models.users.User;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.util.Date;
@@ -25,6 +26,10 @@ public class Donation {
     @ManyToOne
     @JoinColumn(name = "donation_type_id")
     private DonationType donationType;
+
+    @ManyToOne
+    @JoinColumn(name = "donor_id")
+    private User donor;
 
     public Donation() {
     }
@@ -71,6 +76,14 @@ public class Donation {
 
     public void setDonationType(DonationType donationType) {
         this.donationType = donationType;
+    }
+
+    public User getDonor() {
+        return donor;
+    }
+
+    public void setDonor(User donor) {
+        this.donor = donor;
     }
 
     public String getDescription() {

@@ -1,11 +1,12 @@
 
 import { useEffect, useState } from "react";
-import { fetchStatus, fetchDonationTypes } from "./api.js";
+import { fetchStatus, fetchDonationTypes, fetchDonors } from "./api.js";
 import { initialData } from "./data.js";
 import { resources } from "./config.js";
 import Sidebar from "./components/Sidebar.jsx";
 import Overview from "./components/Overview.jsx";
 import ResourcePage from "./components/ResourcePage.jsx";
+import DonationPage from "./components/DonationPage.jsx";
 import AuthPage from "./components/AuthPage.jsx";
 
 
@@ -18,12 +19,25 @@ export default function App() {
   const [data, setData] = useState(initialData);
   const [backend, setBackend] = useState("checking");
   const [donationTypes, setDonationTypes] = useState([]);
+  const [donors, setDonors] = useState([]);
 
   const checkBackend = () => {
-    setBackend("checking");
-    fetchStatus()
-      .then(() => setBackend("online"))
-      .catch(() => setBackend("offline"));
+    setBackend((prev) => {
+      const wasPreviouslyOffline = prev === "offline";
+
+      fetchStatus()
+        .then(() => {
+          if (wasPreviouslyOffline) {
+            // Backend restarted — in-memory DB was wiped, old token is stale
+            handleLogout();
+          } else {
+            setBackend("online");
+          }
+        })
+        .catch(() => setBackend("offline"));
+
+      return "checking";
+    });
   };
 
   useEffect(() => {
@@ -41,6 +55,12 @@ export default function App() {
       .then(setDonationTypes)
       .catch((error) => {
         console.error("Could not load donation types:", error);
+      });
+
+    fetchDonors()
+      .then(setDonors)
+      .catch((error) => {
+        console.error("Could not load donors:", error);
       });
   }, [token]);
 
@@ -83,24 +103,15 @@ export default function App() {
 
         {page === "overview" ? (
           <Overview data={data} onOpen={setPage} />
+        ) : page === "donations" ? (
+          <DonationPage
+            donors={donors}
+            donationTypes={donationTypes}
+          />
         ) : (
           <ResourcePage
             key={page}
-            config={
-              page === "donations"
-                ? {
-                  ...resources.donations,
-                  fields: resources.donations.fields.map((field) =>
-                    field.key === "type"
-                      ? {
-                        ...field,
-                        options: donationTypes.map((type) => type.name),
-                      }
-                      : field
-                  ),
-                }
-                : resources[page]
-            }
+            config={resources[page]}
             rows={data[page]}
             setRows={setRows(page)}
           />

@@ -1,7 +1,7 @@
-
 package com.example.nonprofit.controllers;
 
-import com.example.nonprofit.models.donations.Donation;
+import com.example.nonprofit.dto.DonationRequest;
+import com.example.nonprofit.dto.DonationResponse;
 import com.example.nonprofit.services.DonationService;
 import com.example.nonprofit.donation_strategy.DonationStrategyFactory;
 import com.example.nonprofit.donation_strategy.DonationStrategy;
@@ -22,29 +22,31 @@ public class DonationController {
     }
 
     @GetMapping
-    public List<Donation> getAll() {
+    public List<DonationResponse> getAll() {
         return service.getAll();
     }
 
     @GetMapping("/{id}")
-    public Donation getById(@PathVariable Long id) {
+    public DonationResponse getById(@PathVariable Long id) {
         return service.getById(id);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Donation create(@RequestBody Donation donation) {
+    public DonationResponse create(@RequestBody DonationRequest request) {
         DonationStrategyFactory factory = DonationStrategyFactory.getInstance();
-        DonationStrategy strategy = factory.getDonationStrategy(donation.getMethod());
-        strategy.processDonation();
-        return service.create(donation);
+        DonationStrategy strategy = factory.getDonationStrategy(request.getMethod());
+        if (strategy != null) {
+            strategy.processDonation();
+        }
+        return service.create(request);
     }
 
     @PutMapping("/{id}")
-    public Donation update(
+    public DonationResponse update(
             @PathVariable Long id,
-            @RequestBody Donation donation) {
-        return service.update(id, donation);
+            @RequestBody DonationRequest request) {
+        return service.update(id, request);
     }
 
     @DeleteMapping("/{id}")

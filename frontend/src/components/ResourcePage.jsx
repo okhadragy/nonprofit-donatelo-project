@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ConfirmModal from "./ConfirmModal.jsx";
 
 const pillClass = (value) =>
   ["Active", "Ongoing"].includes(value) ? "pill good" : ["Planned", "Waitlist"].includes(value) ? "pill warn" : "pill";
@@ -6,6 +7,7 @@ const pillClass = (value) =>
 // One reusable page: table + search + add/edit modal + delete.
 export default function ResourcePage({ config, rows, setRows }) {
   const [editing, setEditing] = useState(null); // null = closed, otherwise the record in the form
+  const [deletingRow, setDeletingRow] = useState(null);
   const [query, setQuery] = useState("");
 
   const blank = () => ({
@@ -26,8 +28,13 @@ export default function ResourcePage({ config, rows, setRows }) {
   };
 
   const remove = (row) => {
-    if (window.confirm(`Delete this ${config.singular}?`)) {
-      setRows(rows.filter((r) => r.id !== row.id));
+    setDeletingRow(row);
+  };
+
+  const confirmDelete = () => {
+    if (deletingRow) {
+      setRows(rows.filter((r) => r.id !== deletingRow.id));
+      setDeletingRow(null);
     }
   };
 
@@ -135,6 +142,15 @@ export default function ResourcePage({ config, rows, setRows }) {
           </form>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={Boolean(deletingRow)}
+        title={`Delete ${config.singular}?`}
+        message={`Are you sure you want to delete this ${config.singular}? This action cannot be undone.`}
+        confirmText={`Delete ${config.singular}`}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeletingRow(null)}
+      />
     </>
   );
 }

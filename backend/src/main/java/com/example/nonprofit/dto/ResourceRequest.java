@@ -4,6 +4,7 @@ public class ResourceRequest {
 
     private String name;
     private String description;
+    private Long categoryId;
     private String category;
 
     public String getName() {
@@ -20,6 +21,14 @@ public class ResourceRequest {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public Long getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(Long categoryId) {
+        this.categoryId = categoryId;
     }
 
     public String getCategory() {

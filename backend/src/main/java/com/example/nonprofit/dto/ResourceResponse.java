@@ -7,7 +7,8 @@ public class ResourceResponse {
     private Long id;
     private String name;
     private String description;
-    private String category;
+    private Long categoryId;
+    private String categoryName;
 
     public ResourceResponse() {
     }
@@ -17,7 +18,12 @@ public class ResourceResponse {
         dto.id = resource.getId();
         dto.name = resource.getName();
         dto.description = resource.getDescription();
-        dto.category = resource.getCategory();
+
+        if (resource.getCategory() != null) {
+            dto.categoryId = resource.getCategory().getId();
+            dto.categoryName = resource.getCategory().getName();
+        }
+
         return dto;
     }
 
@@ -33,7 +39,11 @@ public class ResourceResponse {
         return description;
     }
 
-    public String getCategory() {
-        return category;
+    public Long getCategoryId() {
+        return categoryId;
+    }
+
+    public String getCategoryName() {
+        return categoryName;
     }
 }

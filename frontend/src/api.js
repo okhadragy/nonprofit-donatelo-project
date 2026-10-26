@@ -241,3 +241,9 @@ export async function fetchDistributions() {
   if (!res.ok) throw new Error(`Failed to fetch distributions`);
   return res.json();
 }
+
+export async function fetchResourceCategories() {
+  const res = await authenticatedFetch(`/resource-categories`);
+  if (!res.ok) throw new Error(`Failed to fetch resource categories`);
+  return res.json();
+}

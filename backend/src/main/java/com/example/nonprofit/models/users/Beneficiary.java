@@ -1,15 +1,21 @@
 package com.example.nonprofit.models.users;
 
+import com.example.nonprofit.models.resources.BeneficiaryCategory;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 
 @Entity
 @DiscriminatorValue("BENEFICIARY")
 public class Beneficiary extends User {
 
     private String city;
-    private String category;
     private String status;
+
+    @ManyToOne
+    @JoinColumn(name = "beneficiary_category_id")
+    private BeneficiaryCategory category;
 
     public Beneficiary() {}
 
@@ -19,7 +25,7 @@ public class Beneficiary extends User {
             String username,
             String password,
             String city,
-            String category) {
+            BeneficiaryCategory category) {
         super(name, email, username, password, "BENEFICIARY");
         this.city = city;
         this.category = category;
@@ -32,7 +38,7 @@ public class Beneficiary extends User {
             String username,
             String password,
             String city,
-            String category,
+            BeneficiaryCategory category,
             String status) {
         super(name, email, username, password, "BENEFICIARY");
         this.city = city;
@@ -48,11 +54,11 @@ public class Beneficiary extends User {
         this.city = city;
     }
 
-    public String getCategory() {
+    public BeneficiaryCategory getCategory() {
         return category;
     }
 
-    public void setCategory(String category) {
+    public void setCategory(BeneficiaryCategory category) {
         this.category = category;
     }
 

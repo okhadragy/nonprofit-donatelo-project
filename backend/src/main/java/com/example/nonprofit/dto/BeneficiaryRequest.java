@@ -6,6 +6,7 @@ public class BeneficiaryRequest {
     private String email;
     private String username;
     private String city;
+    private Long categoryId;
     private String category;
     private String status;
 
@@ -39,6 +40,14 @@ public class BeneficiaryRequest {
 
     public void setCity(String city) {
         this.city = city;
+    }
+
+    public Long getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(Long categoryId) {
+        this.categoryId = categoryId;
     }
 
     public String getCategory() {

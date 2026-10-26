@@ -9,7 +9,8 @@ public class BeneficiaryResponse {
     private String email;
     private String username;
     private String city;
-    private String category;
+    private Long categoryId;
+    private String categoryName;
     private String status;
 
     public BeneficiaryResponse() {
@@ -22,8 +23,13 @@ public class BeneficiaryResponse {
         dto.email = beneficiary.getEmail();
         dto.username = beneficiary.getUsername();
         dto.city = beneficiary.getCity();
-        dto.category = beneficiary.getCategory();
         dto.status = beneficiary.getStatus();
+
+        if (beneficiary.getCategory() != null) {
+            dto.categoryId = beneficiary.getCategory().getId();
+            dto.categoryName = beneficiary.getCategory().getName();
+        }
+
         return dto;
     }
 
@@ -47,8 +53,12 @@ public class BeneficiaryResponse {
         return city;
     }
 
-    public String getCategory() {
-        return category;
+    public Long getCategoryId() {
+        return categoryId;
+    }
+
+    public String getCategoryName() {
+        return categoryName;
     }
 
     public String getStatus() {

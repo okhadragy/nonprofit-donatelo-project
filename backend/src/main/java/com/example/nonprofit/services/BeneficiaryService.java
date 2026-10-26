@@ -2,7 +2,9 @@ package com.example.nonprofit.services;
 
 import com.example.nonprofit.dto.BeneficiaryRequest;
 import com.example.nonprofit.dto.BeneficiaryResponse;
+import com.example.nonprofit.models.resources.BeneficiaryCategory;
 import com.example.nonprofit.models.users.Beneficiary;
+import com.example.nonprofit.repositories.BeneficiaryCategoryRepository;
 import com.example.nonprofit.repositories.BeneficiaryRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,12 +18,15 @@ import java.util.stream.Collectors;
 public class BeneficiaryService {
 
     private final BeneficiaryRepository beneficiaryRepository;
+    private final BeneficiaryCategoryRepository categoryRepository;
     private final PasswordEncoder passwordEncoder;
 
     public BeneficiaryService(
             BeneficiaryRepository beneficiaryRepository,
+            BeneficiaryCategoryRepository categoryRepository,
             PasswordEncoder passwordEncoder) {
         this.beneficiaryRepository = beneficiaryRepository;
+        this.categoryRepository = categoryRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -62,13 +67,15 @@ public class BeneficiaryService {
             status = "Active";
         }
 
+        BeneficiaryCategory category = resolveCategory(request);
+
         Beneficiary beneficiary = new Beneficiary(
                 request.getName(),
                 email,
                 username,
                 passwordEncoder.encode("Beneficiary1234"),
                 request.getCity(),
-                request.getCategory(),
+                category,
                 status
         );
 
@@ -82,7 +89,8 @@ public class BeneficiaryService {
 
         existing.setName(request.getName());
         existing.setCity(request.getCity());
-        existing.setCategory(request.getCategory());
+        existing.setCategory(resolveCategory(request));
+
         if (request.getStatus() != null && !request.getStatus().isBlank()) {
             existing.setStatus(request.getStatus());
         }
@@ -97,6 +105,19 @@ public class BeneficiaryService {
     public void delete(Long id) {
         Beneficiary existing = findBeneficiaryOrThrow(id);
         beneficiaryRepository.delete(existing);
+    }
+
+    private BeneficiaryCategory resolveCategory(BeneficiaryRequest request) {
+        if (request.getCategoryId() != null) {
+            return categoryRepository.findById(request.getCategoryId())
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST, "Beneficiary category not found with id: " + request.getCategoryId()));
+        }
+        if (request.getCategory() != null && !request.getCategory().isBlank()) {
+            return categoryRepository.findByNameIgnoreCase(request.getCategory().trim())
+                    .orElse(null);
+        }
+        return null;
     }
 
     private Beneficiary findBeneficiaryOrThrow(Long id) {

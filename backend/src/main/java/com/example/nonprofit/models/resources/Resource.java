@@ -16,13 +16,14 @@ public class Resource {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false)
-    private String category;
+    @ManyToOne
+    @JoinColumn(name = "resource_category_id")
+    private ResourceCategory category;
 
     public Resource() {
     }
 
-    public Resource(String name, String description, String category) {
+    public Resource(String name, String description, ResourceCategory category) {
         this.name = name;
         this.description = description;
         this.category = category;
@@ -48,11 +49,11 @@ public class Resource {
         this.description = description;
     }
 
-    public String getCategory() {
+    public ResourceCategory getCategory() {
         return category;
     }
 
-    public void setCategory(String category) {
+    public void setCategory(ResourceCategory category) {
         this.category = category;
     }
 }

@@ -4,8 +4,12 @@ import {
   createBeneficiary,
   updateBeneficiary,
   deleteBeneficiary,
+  fetchBeneficiaryCategories,
   fetchResources,
   createResource,
+  fetchResourceCategories,
+  distributeResource,
+  fetchDistributions,
 } from "../api.js";
 import ConfirmModal from "./ConfirmModal.jsx";
 
@@ -20,7 +24,10 @@ export default function BeneficiaryPage() {
   const [activeTab, setActiveTab] = useState("beneficiaries");
 
   const [beneficiaries, setBeneficiaries] = useState([]);
+  const [beneficiaryCategories, setBeneficiaryCategories] = useState([]);
   const [resources, setResources] = useState([]);
+  const [resourceCategories, setResourceCategories] = useState([]);
+  const [distributions, setDistributions] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -38,12 +45,18 @@ export default function BeneficiaryPage() {
     setLoading(true);
     setError(null);
     try {
-      const [bData, rData] = await Promise.all([
+      const [bData, bCats, rData, rCats, dData] = await Promise.all([
         fetchBeneficiaries(),
+        fetchBeneficiaryCategories(),
         fetchResources(),
+        fetchResourceCategories(),
+        fetchDistributions(),
       ]);
       setBeneficiaries(bData);
+      setBeneficiaryCategories(bCats);
       setResources(rData);
+      setResourceCategories(rCats);
+      setDistributions(dData);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -56,11 +69,23 @@ export default function BeneficiaryPage() {
   }, []);
 
   const openAddBeneficiary = () => {
-    setEditingBeneficiary({ id: null, name: "", city: "", category: "Family", status: "Active" });
+    setEditingBeneficiary({
+      id: null,
+      name: "",
+      city: "",
+      categoryId: beneficiaryCategories[0] ? String(beneficiaryCategories[0].id) : "",
+      status: "Active",
+    });
   };
 
   const openEditBeneficiary = (row) => {
-    setEditingBeneficiary({ id: row.id, name: row.name, city: row.city, category: row.category, status: row.status });
+    setEditingBeneficiary({
+      id: row.id,
+      name: row.name,
+      city: row.city,
+      categoryId: row.categoryId ? String(row.categoryId) : "",
+      status: row.status,
+    });
   };
 
   const saveBeneficiary = async (e) => {
@@ -68,10 +93,17 @@ export default function BeneficiaryPage() {
     setIsSaving(true);
     setError(null);
     try {
+      const payload = {
+        name: editingBeneficiary.name,
+        city: editingBeneficiary.city,
+        categoryId: editingBeneficiary.categoryId ? Number(editingBeneficiary.categoryId) : null,
+        status: editingBeneficiary.status,
+      };
+
       if (editingBeneficiary.id === null) {
-        await createBeneficiary(editingBeneficiary);
+        await createBeneficiary(payload);
       } else {
-        await updateBeneficiary(editingBeneficiary.id, editingBeneficiary);
+        await updateBeneficiary(editingBeneficiary.id, payload);
       }
       setEditingBeneficiary(null);
       await loadAll();
@@ -83,7 +115,12 @@ export default function BeneficiaryPage() {
   };
 
   const openAddResource = () => {
-    setEditingResource({ id: null, name: "", description: "", category: "" });
+    setEditingResource({
+      id: null,
+      name: "",
+      description: "",
+      categoryId: resourceCategories[0] ? String(resourceCategories[0].id) : "",
+    });
   };
 
   const saveResource = async (e) => {
@@ -91,7 +128,13 @@ export default function BeneficiaryPage() {
     setIsSaving(true);
     setError(null);
     try {
-      await createResource(editingResource);
+      const payload = {
+        name: editingResource.name,
+        description: editingResource.description,
+        categoryId: editingResource.categoryId ? Number(editingResource.categoryId) : null,
+      };
+
+      await createResource(payload);
       setEditingResource(null);
       await loadAll();
     } catch (err) {
@@ -105,6 +148,7 @@ export default function BeneficiaryPage() {
     setDistributeModal({
       beneficiaryId: beneficiaries[0] ? String(beneficiaries[0].id) : "",
       resourceId: resources[0] ? String(resources[0].id) : "",
+      quantity: 1,
     });
   };
 
@@ -113,18 +157,13 @@ export default function BeneficiaryPage() {
     setIsSaving(true);
     setError(null);
     try {
-      await fetch("http://localhost:8080/api/resources/distribute", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({
-          resourceId: Number(distributeModal.resourceId),
-          beneficiaryId: Number(distributeModal.beneficiaryId),
-        }),
+      await distributeResource({
+        resourceId: Number(distributeModal.resourceId),
+        beneficiaryId: Number(distributeModal.beneficiaryId),
+        quantity: Number(distributeModal.quantity) || 1,
       });
       setDistributeModal(null);
+      await loadAll();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -150,11 +189,15 @@ export default function BeneficiaryPage() {
   };
 
   const visibleBeneficiaries = beneficiaries.filter((b) =>
-    `${b.name} ${b.city} ${b.category} ${b.status}`.toLowerCase().includes(query.toLowerCase())
+    `${b.name} ${b.city} ${b.categoryName || ""} ${b.status}`.toLowerCase().includes(query.toLowerCase())
   );
 
   const visibleResources = resources.filter((r) =>
-    `${r.name} ${r.category} ${r.description}`.toLowerCase().includes(query.toLowerCase())
+    `${r.name} ${r.categoryName || ""} ${r.description || ""}`.toLowerCase().includes(query.toLowerCase())
+  );
+
+  const visibleDistributions = distributions.filter((d) =>
+    `${d.beneficiaryName || ""} ${d.resourceName || ""} ${d.distributionDate || ""}`.toLowerCase().includes(query.toLowerCase())
   );
 
   return (
@@ -162,17 +205,17 @@ export default function BeneficiaryPage() {
       <header className="page-head">
         <div>
           <h1>Beneficiaries & Resources</h1>
-          <p>{beneficiaries.length} beneficiaries · {resources.length} resource types</p>
+          <p>{beneficiaries.length} beneficiaries · {resources.length} resources · {distributions.length} distributions</p>
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
           <button className="btn" onClick={openDistributeModal}>
-            Distribute
+            Distribute Resource
           </button>
           {activeTab === "resources" ? (
-            <button className="btn primary" onClick={openAddResource}>Add resource</button>
-          ) : (
-            <button className="btn primary" onClick={openAddBeneficiary}>Add beneficiary</button>
-          )}
+            <button className="btn primary" onClick={openAddResource}>Add Resource</button>
+          ) : activeTab === "beneficiaries" ? (
+            <button className="btn primary" onClick={openAddBeneficiary}>Add Beneficiary</button>
+          ) : null}
         </div>
       </header>
 
@@ -185,13 +228,22 @@ export default function BeneficiaryPage() {
         <button className={`btn ${activeTab === "resources" ? "primary" : ""}`} onClick={() => { setActiveTab("resources"); setQuery(""); }}>
           Resources ({resources.length})
         </button>
+        <button className={`btn ${activeTab === "distributions" ? "primary" : ""}`} onClick={() => { setActiveTab("distributions"); setQuery(""); }}>
+          Resource Distributions ({distributions.length})
+        </button>
       </div>
 
       <section className="panel">
         <div className="toolbar">
           <input
             type="search"
-            placeholder={activeTab === "beneficiaries" ? "Search beneficiaries..." : "Search resources..."}
+            placeholder={
+              activeTab === "beneficiaries"
+                ? "Search beneficiaries..."
+                : activeTab === "resources"
+                ? "Search resources..."
+                : "Search distributions..."
+            }
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -217,7 +269,7 @@ export default function BeneficiaryPage() {
                     <tr key={row.id}>
                       <td><strong>{row.name}</strong></td>
                       <td>{row.city}</td>
-                      <td>{row.category}</td>
+                      <td>{row.categoryName || "—"}</td>
                       <td><span className={pillClass(row.status)}>{row.status}</span></td>
                       <td className="actions">
                         <button className="btn small" onClick={() => openEditBeneficiary(row)}>Edit</button>
@@ -231,7 +283,7 @@ export default function BeneficiaryPage() {
                 <p className="empty">{beneficiaries.length === 0 ? "No beneficiaries yet." : "No matches."}</p>
               )}
             </>
-          ) : (
+          ) : activeTab === "resources" ? (
             <>
               <table>
                 <thead>
@@ -245,7 +297,7 @@ export default function BeneficiaryPage() {
                   {visibleResources.map((row) => (
                     <tr key={row.id}>
                       <td><strong>{row.name}</strong></td>
-                      <td>{row.category}</td>
+                      <td>{row.categoryName || "—"}</td>
                       <td>{row.description || "—"}</td>
                     </tr>
                   ))}
@@ -253,6 +305,32 @@ export default function BeneficiaryPage() {
               </table>
               {visibleResources.length === 0 && (
                 <p className="empty">{resources.length === 0 ? "No resources yet." : "No matches."}</p>
+              )}
+            </>
+          ) : (
+            <>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Distribution Date</th>
+                    <th>Beneficiary</th>
+                    <th>Resource</th>
+                    <th>Quantity</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleDistributions.map((row) => (
+                    <tr key={row.id}>
+                      <td>{row.distributionDate}</td>
+                      <td><strong>{row.beneficiaryName}</strong></td>
+                      <td>{row.resourceName}</td>
+                      <td>{row.quantity}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {visibleDistributions.length === 0 && (
+                <p className="empty">{distributions.length === 0 ? "No distributions recorded yet." : "No matches."}</p>
               )}
             </>
           )}
@@ -275,9 +353,15 @@ export default function BeneficiaryPage() {
             </label>
 
             <label>Category
-              <select value={editingBeneficiary.category}
-                onChange={(e) => setEditingBeneficiary({ ...editingBeneficiary, category: e.target.value })}>
-                {["Family", "Student", "Elder", "Orphan"].map((c) => <option key={c}>{c}</option>)}
+              <select
+                required
+                value={editingBeneficiary.categoryId}
+                onChange={(e) => setEditingBeneficiary({ ...editingBeneficiary, categoryId: e.target.value })}
+              >
+                <option value="">— Select Category —</option>
+                {beneficiaryCategories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
               </select>
             </label>
 
@@ -309,8 +393,16 @@ export default function BeneficiaryPage() {
             </label>
 
             <label>Category
-              <input type="text" required value={editingResource.category}
-                onChange={(e) => setEditingResource({ ...editingResource, category: e.target.value })} />
+              <select
+                required
+                value={editingResource.categoryId}
+                onChange={(e) => setEditingResource({ ...editingResource, categoryId: e.target.value })}
+              >
+                <option value="">— Select Category —</option>
+                {resourceCategories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
             </label>
 
             <label>Description
@@ -336,7 +428,7 @@ export default function BeneficiaryPage() {
             <label>Beneficiary
               <select required value={distributeModal.beneficiaryId}
                 onChange={(e) => setDistributeModal({ ...distributeModal, beneficiaryId: e.target.value })}>
-                <option value="">— Select —</option>
+                <option value="">— Select Beneficiary —</option>
                 {beneficiaries.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
             </label>
@@ -344,9 +436,19 @@ export default function BeneficiaryPage() {
             <label>Resource
               <select required value={distributeModal.resourceId}
                 onChange={(e) => setDistributeModal({ ...distributeModal, resourceId: e.target.value })}>
-                <option value="">— Select —</option>
+                <option value="">— Select Resource —</option>
                 {resources.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
+            </label>
+
+            <label>Quantity
+              <input
+                type="number"
+                required
+                min="1"
+                value={distributeModal.quantity}
+                onChange={(e) => setDistributeModal({ ...distributeModal, quantity: e.target.value })}
+              />
             </label>
 
             <div className="modal-actions">

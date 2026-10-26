@@ -30,6 +30,10 @@ public class DonationController {
     public DonationResponse getById(@PathVariable Long id) {
         return service.getById(id);
     }
+    @GetMapping("/{id}/document")
+    public String getDocument(@PathVariable Long id, @RequestParam String type) {
+        return service.generateDocument(id, type);
+    }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)

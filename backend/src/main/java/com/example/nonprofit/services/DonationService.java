@@ -1,5 +1,15 @@
 package com.example.nonprofit.services;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.example.nonprofit.dto.DonationRequest;
 import com.example.nonprofit.dto.DonationResponse;
 import com.example.nonprofit.models.donations.Donation;
@@ -8,15 +18,9 @@ import com.example.nonprofit.models.users.User;
 import com.example.nonprofit.repositories.DonationRepository;
 import com.example.nonprofit.repositories.DonationTypeRepository;
 import com.example.nonprofit.repositories.UserRepository;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-import java.util.stream.Collectors;
+import com.example.nonprofit.document_factory.Document;          
+import com.example.nonprofit.document_factory.DocumentFactory;   
+import com.example.nonprofit.donation_observer.DonationSubject;  
 
 @Service
 public class DonationService {
@@ -24,14 +28,17 @@ public class DonationService {
     private final DonationRepository donationRepository;
     private final DonationTypeRepository donationTypeRepository;
     private final UserRepository userRepository;
+    private final DonationSubject donationSubject;
+  
 
     public DonationService(
             DonationRepository donationRepository,
             DonationTypeRepository donationTypeRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,DonationSubject donationSubject) {
         this.donationRepository = donationRepository;
         this.donationTypeRepository = donationTypeRepository;
         this.userRepository = userRepository;
+        this.donationSubject = donationSubject;
     }
 
     public List<DonationResponse> getAll() {
@@ -44,7 +51,15 @@ public class DonationService {
         Donation donation = findDonationOrThrow(id);
         return DonationResponse.fromEntity(donation);
     }
-
+public String generateDocument(Long id, String type) {           
+    Donation donation = findDonationOrThrow(id);
+    try {
+        Document doc = DocumentFactory.getInstance().createDocument(donation, type);
+        return doc.generate();
+    } catch (IllegalArgumentException e) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+    }
+}
     public DonationResponse create(DonationRequest request) {
         validateRequest(request);
 
@@ -61,6 +76,7 @@ public class DonationService {
         applyRequestToEntity(request, existing);
 
         Donation saved = donationRepository.save(existing);
+        donationSubject.setMessage("New donation of " + saved.getAmount() + " received");
         return DonationResponse.fromEntity(saved);
     }
 

@@ -11,7 +11,7 @@ public class Beneficiary extends User {
     private String category;
     private String status;
 
-    protected Beneficiary() {}
+    public Beneficiary() {}
 
     public Beneficiary(
             String name,
@@ -26,15 +26,41 @@ public class Beneficiary extends User {
         this.status = "PENDING";
     }
 
+    public Beneficiary(
+            String name,
+            String email,
+            String username,
+            String password,
+            String city,
+            String category,
+            String status) {
+        super(name, email, username, password, "BENEFICIARY");
+        this.city = city;
+        this.category = category;
+        this.status = status != null ? status : "Active";
+    }
+
     public String getCity() {
         return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
     }
 
     public String getCategory() {
         return category;
     }
 
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
     public String getStatus() {
         return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }

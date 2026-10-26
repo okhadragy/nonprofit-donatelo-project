@@ -114,3 +114,117 @@ export async function fetchDonors() {
   if (!res.ok) throw new Error(`Failed to fetch donors`);
   return res.json();
 }
+
+
+// --- Beneficiaries ---
+
+export async function fetchBeneficiaries() {
+  const res = await authenticatedFetch(`/beneficiaries`);
+  if (!res.ok) throw new Error(`Failed to fetch beneficiaries`);
+  return res.json();
+}
+
+export async function createBeneficiary(data) {
+  const res = await authenticatedFetch(`/beneficiaries`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to create beneficiary (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function updateBeneficiary(id, data) {
+  const res = await authenticatedFetch(`/beneficiaries/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to update beneficiary (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function deleteBeneficiary(id) {
+  const res = await authenticatedFetch(`/beneficiaries/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to delete beneficiary (${res.status})`);
+  }
+}
+
+export async function fetchBeneficiaryCategories() {
+  const res = await authenticatedFetch(`/beneficiary-categories`);
+  if (!res.ok) throw new Error(`Failed to fetch beneficiary categories`);
+  return res.json();
+}
+
+// --- Resources & Inventory ---
+
+export async function fetchResources() {
+  const res = await authenticatedFetch(`/resources`);
+  if (!res.ok) throw new Error(`Failed to fetch resources`);
+  return res.json();
+}
+
+export async function createResource(data) {
+  const res = await authenticatedFetch(`/resources`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to create resource (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function updateResource(id, data) {
+  const res = await authenticatedFetch(`/resources/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to update resource (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function deleteResource(id) {
+  const res = await authenticatedFetch(`/resources/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to delete resource (${res.status})`);
+  }
+}
+
+export async function distributeResource(data) {
+  const res = await authenticatedFetch(`/resources/distribute`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to distribute resource (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function fetchDistributions() {
+  const res = await authenticatedFetch(`/resources/distributions`);
+  if (!res.ok) throw new Error(`Failed to fetch distributions`);
+  return res.json();
+}

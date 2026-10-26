@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { fetchStatus, fetchDonationTypes, fetchDonors } from "./api.js";
 import { initialData } from "./data.js";
@@ -7,9 +6,8 @@ import Sidebar from "./components/Sidebar.jsx";
 import Overview from "./components/Overview.jsx";
 import ResourcePage from "./components/ResourcePage.jsx";
 import DonationPage from "./components/DonationPage.jsx";
+import BeneficiaryPage from "./components/BeneficiaryPage.jsx";
 import AuthPage from "./components/AuthPage.jsx";
-
-
 
 export default function App() {
   const [token, setToken] = useState(
@@ -108,6 +106,8 @@ export default function App() {
             donors={donors}
             donationTypes={donationTypes}
           />
+        ) : page === "beneficiaries" ? (
+          <BeneficiaryPage />
         ) : (
           <ResourcePage
             key={page}

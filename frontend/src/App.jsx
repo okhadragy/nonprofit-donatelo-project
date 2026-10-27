@@ -7,6 +7,7 @@ import Overview from "./components/Overview.jsx";
 import ResourcePage from "./components/ResourcePage.jsx";
 import DonationPage from "./components/DonationPage.jsx";
 import BeneficiaryPage from "./components/BeneficiaryPage.jsx";
+import EventPage from "./components/EventPage.jsx";
 import AuthPage from "./components/AuthPage.jsx";
 
 export default function App() {
@@ -108,6 +109,8 @@ export default function App() {
           />
         ) : page === "beneficiaries" ? (
           <BeneficiaryPage />
+        ) : page === "events" ? (
+          <EventPage />
         ) : (
           <ResourcePage
             key={page}

@@ -1,6 +1,8 @@
 package com.example.nonprofit.config;
 
 import com.example.nonprofit.models.donations.DonationType;
+import com.example.nonprofit.models.events.Event;
+import com.example.nonprofit.models.events.EventCategory;
 import com.example.nonprofit.models.resources.BeneficiaryCategory;
 import com.example.nonprofit.models.resources.Resource;
 import com.example.nonprofit.models.resources.ResourceCategory;
@@ -14,6 +16,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
@@ -29,6 +32,8 @@ public class DataInitializer {
             ResourceRepository resourceRepository,
             ResourceCategoryRepository resourceCategoryRepository,
             ResourceDistributionRepository distributionRepository,
+            EventCategoryRepository eventCategoryRepository,
+            EventRepository eventRepository,
             PasswordEncoder passwordEncoder) {
 
         return args -> {
@@ -133,6 +138,60 @@ public class DataInitializer {
                         distributionRepository.save(new ResourceDistribution(ben, res, 2, new Date()));
                     });
                 });
+            }
+
+            // Seed event categories matching the project requirements:
+            // "Create, manage, and track events (e.g., fundraisers, workshops, outreach programs)."
+            List<String> eventCats = List.of("Fundraiser", "Workshop", "Outreach Program", "Other");
+            for (String ecName : eventCats) {
+                if (!eventCategoryRepository.existsByNameIgnoreCase(ecName)) {
+                    eventCategoryRepository.save(new EventCategory(ecName));
+                }
+            }
+
+            // Seed sample events
+            if (eventRepository.count() == 0) {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+
+                EventCategory fundraiserCat = eventCategoryRepository.findByNameIgnoreCase("Fundraiser").orElse(null);
+                EventCategory workshopCat = eventCategoryRepository.findByNameIgnoreCase("Workshop").orElse(null);
+                EventCategory outreachCat = eventCategoryRepository.findByNameIgnoreCase("Outreach Program").orElse(null);
+
+                Event annualFundraiser = new Event(
+                    "Annual Charity Gala & Fundraiser 2026",
+                    sdf.parse("2026-11-15"),
+                    "Grand Nile Tower, Cairo",
+                    "Planned",
+                    fundraiserCat
+                );
+                eventRepository.save(annualFundraiser);
+
+                Event foodDrive = new Event(
+                    "Winter Warmth Outreach Program",
+                    sdf.parse("2026-11-05"),
+                    "Giza Community Center",
+                    "Ongoing",
+                    outreachCat
+                );
+                eventRepository.save(foodDrive);
+
+                Event workshop = new Event(
+                    "Youth Coding & Mentorship Workshop",
+                    sdf.parse("2026-11-20"),
+                    "Alexandria Public Library",
+                    "Planned",
+                    workshopCat
+                );
+                eventRepository.save(workshop);
+
+                Event cleanWater = new Event(
+                    "Clean Water Initiative Fundraiser",
+                    sdf.parse("2026-10-10"),
+                    "Downtown Cultural Center, Cairo",
+                    "Completed",
+                    fundraiserCat
+                );
+                eventRepository.save(cleanWater);
             }
 
             System.out.println("Initial data initialized successfully.");

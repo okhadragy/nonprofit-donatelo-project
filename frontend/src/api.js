@@ -247,3 +247,182 @@ export async function fetchResourceCategories() {
   if (!res.ok) throw new Error(`Failed to fetch resource categories`);
   return res.json();
 }
+
+
+// --- Events ---
+
+export async function fetchEvents() {
+  const res = await authenticatedFetch(`/events`);
+  if (!res.ok) throw new Error(`Failed to fetch events`);
+  return res.json();
+}
+
+export async function createEvent(data) {
+  const res = await authenticatedFetch(`/events`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to create event (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function updateEvent(id, data) {
+  const res = await authenticatedFetch(`/events/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to update event (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function deleteEvent(id) {
+  const res = await authenticatedFetch(`/events/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to delete event (${res.status})`);
+  }
+}
+
+// --- Event Categories ---
+
+export async function fetchEventCategories() {
+  const res = await authenticatedFetch(`/event-categories`);
+  if (!res.ok) throw new Error(`Failed to fetch event categories`);
+  return res.json();
+}
+
+export async function createEventCategory(data) {
+  const res = await authenticatedFetch(`/event-categories`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to create event category (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function updateEventCategory(id, data) {
+  const res = await authenticatedFetch(`/event-categories/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to update event category (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function deleteEventCategory(id) {
+  const res = await authenticatedFetch(`/event-categories/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to delete event category (${res.status})`);
+  }
+}
+
+// --- Tickets ---
+
+export async function fetchTickets(eventId) {
+  const path = eventId ? `/tickets?eventId=${eventId}` : `/tickets`;
+  const res = await authenticatedFetch(path);
+  if (!res.ok) throw new Error(`Failed to fetch tickets`);
+  return res.json();
+}
+
+export async function createTicket(data) {
+  const res = await authenticatedFetch(`/tickets`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to create ticket (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function updateTicket(id, data) {
+  const res = await authenticatedFetch(`/tickets/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to update ticket (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function deleteTicket(id) {
+  const res = await authenticatedFetch(`/tickets/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to delete ticket (${res.status})`);
+  }
+}
+
+// --- Event Registrations ---
+
+export async function fetchEventRegistrations(eventId) {
+  const path = eventId ? `/event-registrations?eventId=${eventId}` : `/event-registrations`;
+  const res = await authenticatedFetch(path);
+  if (!res.ok) throw new Error(`Failed to fetch registrations`);
+  return res.json();
+}
+
+export async function createEventRegistration(data) {
+  const res = await authenticatedFetch(`/event-registrations`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to create registration (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function updateEventRegistration(id, data) {
+  const res = await authenticatedFetch(`/event-registrations/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to update registration (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function deleteEventRegistration(id) {
+  const res = await authenticatedFetch(`/event-registrations/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to delete registration (${res.status})`);
+  }
+}

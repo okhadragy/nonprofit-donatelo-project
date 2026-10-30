@@ -18,9 +18,11 @@ import com.example.nonprofit.models.users.User;
 import com.example.nonprofit.repositories.DonationRepository;
 import com.example.nonprofit.repositories.DonationTypeRepository;
 import com.example.nonprofit.repositories.UserRepository;
-import com.example.nonprofit.document_factory.Document;          
-import com.example.nonprofit.document_factory.DocumentFactory;   
-import com.example.nonprofit.donation_observer.DonationSubject;  
+import com.example.nonprofit.document_factory.Document;
+import com.example.nonprofit.document_factory.DocumentFactory;
+import com.example.nonprofit.document_factory.ReceiptDocumentFactory;
+import com.example.nonprofit.document_factory.TaxDocumentFactory;
+import com.example.nonprofit.donation_observer.DonationSubject;
 
 @Service
 public class DonationService {
@@ -51,15 +53,15 @@ public class DonationService {
         Donation donation = findDonationOrThrow(id);
         return DonationResponse.fromEntity(donation);
     }
-public String generateDocument(Long id, String type) {           
-    Donation donation = findDonationOrThrow(id);
-    try {
-        Document doc = DocumentFactory.getInstance().createDocument(donation, type);
-        return doc.generate();
-    } catch (IllegalArgumentException e) {
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+    public String generateDocument(Long id, String type) {
+        Donation donation = findDonationOrThrow(id);
+        try {
+            DocumentFactory factory = getDocumentFactory(type);
+            return factory.createDocument(donation).generate();
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
     }
-}
     public DonationResponse create(DonationRequest request) {
         validateRequest(request);
 
@@ -67,6 +69,7 @@ public String generateDocument(Long id, String type) {
         applyRequestToEntity(request, donation);
 
         Donation saved = donationRepository.save(donation);
+        donationSubject.setMessage("New donation of " + saved.getAmount() + " received");
         return DonationResponse.fromEntity(saved);
     }
 
@@ -89,6 +92,20 @@ public String generateDocument(Long id, String type) {
         return donationRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Donation not found"));
+    }
+
+    private DocumentFactory getDocumentFactory(String type) {
+        if (type == null) {
+            throw new IllegalArgumentException("Document type is required");
+        }
+
+        if (type.equalsIgnoreCase("tax")) {
+            return TaxDocumentFactory.getInstance();
+        }
+        if (type.equalsIgnoreCase("receipt")) {
+            return ReceiptDocumentFactory.getInstance();
+        }
+        throw new IllegalArgumentException("Invalid document type");
     }
 
     private void validateRequest(DonationRequest request) {

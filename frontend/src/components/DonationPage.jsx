@@ -13,7 +13,7 @@ const money = (v) => `$${Number(v).toLocaleString()}`;
 const pillClass = (value) =>
   ["Active", "Ongoing"].includes(value) ? "pill good" : ["Planned", "Waitlist"].includes(value) ? "pill warn" : "pill";
 
-export default function DonationPage({ donors, donationTypes }) {
+export default function DonationPage({ donors, donationTypes, onDonationAdded }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -78,7 +78,8 @@ export default function DonationPage({ donors, donationTypes }) {
 
     try {
       if (editing.id === null) {
-        await createDonation(payload);
+        const donation = await createDonation(payload);
+        onDonationAdded(donation);
       } else {
         await updateDonation(editing.id, payload);
       }

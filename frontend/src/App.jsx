@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { fetchStatus, fetchDonationTypes, fetchDonors } from "./api.js";
 import { initialData } from "./data.js";
 import { resources } from "./config.js";
@@ -9,6 +9,8 @@ import DonationPage from "./components/DonationPage.jsx";
 import BeneficiaryPage from "./components/BeneficiaryPage.jsx";
 import EventPage from "./components/EventPage.jsx";
 import AuthPage from "./components/AuthPage.jsx";
+import Announcement from "./components/Announcement.jsx";
+import { DonationSubject } from "./observers/DonationSubject.js";
 
 export default function App() {
   const [token, setToken] = useState(
@@ -19,6 +21,16 @@ export default function App() {
   const [backend, setBackend] = useState("checking");
   const [donationTypes, setDonationTypes] = useState([]);
   const [donors, setDonors] = useState([]);
+  const [announcement, setAnnouncement] = useState(null);
+  const donationSubject = useRef(new DonationSubject()).current;
+
+  useEffect(() => {
+    const unsubscribe = donationSubject.addObserver((donation) => {
+      const donor = donation.donorName ? ` from ${donation.donorName}` : "";
+      setAnnouncement(`A donation of $${Number(donation.amount).toLocaleString()} was added${donor}.`);
+    });
+    return unsubscribe;
+  }, [donationSubject]);
 
   const checkBackend = () => {
     setBackend((prev) => {
@@ -86,6 +98,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <Announcement message={announcement} onDismiss={() => setAnnouncement(null)} />
       <Sidebar
         page={page}
         onNavigate={setPage}
@@ -106,6 +119,7 @@ export default function App() {
           <DonationPage
             donors={donors}
             donationTypes={donationTypes}
+            onDonationAdded={(donation) => donationSubject.notifyObservers(donation)}
           />
         ) : page === "beneficiaries" ? (
           <BeneficiaryPage />

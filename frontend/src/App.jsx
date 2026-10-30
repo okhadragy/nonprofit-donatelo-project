@@ -101,7 +101,7 @@ export default function App() {
         </div>
 
         {page === "overview" ? (
-          <Overview data={data} onOpen={setPage} />
+          <Overview data={data} onOpen={setPage} onUpdateData={setData} />
         ) : page === "donations" ? (
           <DonationPage
             donors={donors}

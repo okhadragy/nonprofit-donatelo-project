@@ -1,11 +1,12 @@
 package com.example.nonprofit.models.events;
 
+import com.example.nonprofit.event_decorator.EventComponent;
 import jakarta.persistence.*;
 import java.util.Date;
 
 @Entity
 @Table(name = "events")
-public class Event {
+public class Event implements EventComponent {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -83,7 +84,19 @@ public class Event {
         this.category = category;
     }
 
+    @Override
     public String getDescription() {
-        return title + " on " + date + " at " + location;
+        StringBuilder sb = new StringBuilder();
+        sb.append(title != null ? title : "Event");
+        if (date != null) {
+            sb.append(" on ").append(date);
+        }
+        if (location != null && !location.isBlank()) {
+            sb.append(" at ").append(location);
+        }
+        if (status != null && !status.isBlank()) {
+            sb.append(" [Status: ").append(status).append("]");
+        }
+        return sb.toString();
     }
 }

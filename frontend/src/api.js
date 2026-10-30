@@ -293,6 +293,55 @@ export async function deleteEvent(id) {
   }
 }
 
+// Decorator Pattern & Event Communications
+export async function fetchDecoratedEvent(id, options = {}) {
+  const params = new URLSearchParams();
+  if (options.fundraising) params.append("fundraising", "true");
+  if (options.reminder) params.append("reminder", "true");
+  if (options.followup) params.append("followup", "true");
+  if (options.fundraisingGoal) params.append("fundraisingGoal", options.fundraisingGoal);
+  if (options.donationAppeal) params.append("donationAppeal", options.donationAppeal);
+  if (options.reminderAlert) params.append("reminderAlert", options.reminderAlert);
+  if (options.surveyUrl) params.append("surveyUrl", options.surveyUrl);
+
+  const query = params.toString() ? `?${params.toString()}` : "";
+  const res = await authenticatedFetch(`/events/${id}/decorated${query}`);
+  if (!res.ok) throw new Error("Failed to fetch decorated event");
+  return res.json();
+}
+
+export async function sendEventCommunication(id, data = {}) {
+  const res = await authenticatedFetch(`/events/${id}/communications`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to send communication (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function sendEventReminder(id, data = {}) {
+  const res = await authenticatedFetch(`/events/${id}/send-reminder`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to send reminder (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function fetchEventObserverLogs() {
+  const res = await authenticatedFetch(`/events/observer-logs`);
+  if (!res.ok) throw new Error("Failed to fetch event observer logs");
+  return res.json();
+}
+
 // --- Event Categories ---
 
 export async function fetchEventCategories() {

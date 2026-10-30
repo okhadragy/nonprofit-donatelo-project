@@ -3,6 +3,8 @@ package com.example.nonprofit.config;
 import com.example.nonprofit.models.donations.DonationType;
 import com.example.nonprofit.models.events.Event;
 import com.example.nonprofit.models.events.EventCategory;
+import com.example.nonprofit.models.events.EventRegistration;
+import com.example.nonprofit.models.events.Ticket;
 import com.example.nonprofit.models.resources.BeneficiaryCategory;
 import com.example.nonprofit.models.resources.Resource;
 import com.example.nonprofit.models.resources.ResourceCategory;
@@ -16,6 +18,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -34,6 +37,8 @@ public class DataInitializer {
             ResourceDistributionRepository distributionRepository,
             EventCategoryRepository eventCategoryRepository,
             EventRepository eventRepository,
+            TicketRepository ticketRepository,
+            EventRegistrationRepository registrationRepository,
             PasswordEncoder passwordEncoder) {
 
         return args -> {
@@ -192,6 +197,30 @@ public class DataInitializer {
                     fundraiserCat
                 );
                 eventRepository.save(cleanWater);
+            }
+
+            // Seed sample tickets and registrations
+            if (ticketRepository.count() == 0 && eventRepository.count() > 0) {
+                List<Event> allEvents = eventRepository.findAll();
+                Event galaEvent = allEvents.stream().filter(e -> e.getTitle().contains("Gala")).findFirst().orElse(allEvents.get(0));
+                Event workshopEvent = allEvents.stream().filter(e -> e.getTitle().contains("Workshop")).findFirst().orElse(allEvents.get(0));
+                Event outreachEvent = allEvents.stream().filter(e -> e.getTitle().contains("Outreach")).findFirst().orElse(allEvents.get(0));
+
+                Ticket vipGala = new Ticket("VIP Gala Pass", new BigDecimal("150.00"), galaEvent);
+                Ticket standardGala = new Ticket("Standard Gala Seat", new BigDecimal("50.00"), galaEvent);
+                Ticket freeWorkshop = new Ticket("Student Free Pass", BigDecimal.ZERO, workshopEvent);
+                Ticket outreachVolunteer = new Ticket("Outreach Volunteer Badge", BigDecimal.ZERO, outreachEvent);
+
+                ticketRepository.saveAll(List.of(vipGala, standardGala, freeWorkshop, outreachVolunteer));
+
+                if (registrationRepository.count() == 0) {
+                    EventRegistration reg1 = new EventRegistration("Youssef Ibrahim", "Confirmed", galaEvent, vipGala);
+                    EventRegistration reg2 = new EventRegistration("Layla Mostafa", "Registered", galaEvent, standardGala);
+                    EventRegistration reg3 = new EventRegistration("Kareem Tarek", "Attended", workshopEvent, freeWorkshop);
+                    EventRegistration reg4 = new EventRegistration("Nouran Adel", "Registered", outreachEvent, outreachVolunteer);
+
+                    registrationRepository.saveAll(List.of(reg1, reg2, reg3, reg4));
+                }
             }
 
             System.out.println("Initial data initialized successfully.");

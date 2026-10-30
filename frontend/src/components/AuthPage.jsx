@@ -9,6 +9,7 @@ export default function AuthPage({ onAuthenticated }) {
     email: "",
     username: "",
     password: "",
+    role: "DONOR",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -84,6 +85,17 @@ export default function AuthPage({ onAuthenticated }) {
               required
               autoComplete="email"
             />
+
+            <label htmlFor="role">I want to join as</label>
+            <select
+              id="role"
+              name="role"
+              value={form.role}
+              onChange={update}
+            >
+              <option value="DONOR">Donor</option>
+              <option value="VOLUNTEER">Volunteer</option>
+            </select>
           </>
         )}
 

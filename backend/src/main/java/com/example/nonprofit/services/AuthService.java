@@ -5,13 +5,13 @@ import com.example.nonprofit.dto.LoginRequest;
 import com.example.nonprofit.dto.RegisterRequest;
 import com.example.nonprofit.models.users.Donor;
 import com.example.nonprofit.models.users.User;
+import com.example.nonprofit.models.users.Volunteer;
 import com.example.nonprofit.repositories.UserRepository;
 import com.example.nonprofit.security.JwtService;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication
-        .UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -49,20 +49,28 @@ public class AuthService {
                     HttpStatus.CONFLICT, "Email already exists");
         }
 
+        User user;
+        if ("VOLUNTEER".equalsIgnoreCase(request.getRole())) {
+            user = new Volunteer(
+                    request.getName(),
+                    request.getEmail(),
+                    request.getUsername(),
+                    passwordEncoder.encode(request.getPassword()));
+        } else {
+            user = new Donor(
+                    request.getName(),
+                    request.getEmail(),
+                    request.getUsername(),
+                    passwordEncoder.encode(request.getPassword()));
+        }
 
-        User donor = new Donor(
-                request.getName(),
-                request.getEmail(),
-                request.getUsername(),
-                passwordEncoder.encode(request.getPassword()));
-
-        userRepository.save(donor);
+        userRepository.save(user);
 
         UserDetails principal =
                 org.springframework.security.core.userdetails.User
-                        .withUsername(donor.getUsername())
-                        .password(donor.getPassword())
-                        .roles(donor.getRole())
+                        .withUsername(user.getUsername())
+                        .password(user.getPassword())
+                        .roles(user.getRole())
                         .build();
 
         String token = jwtService.generateToken(principal);
@@ -86,3 +94,4 @@ public class AuthService {
         return new AuthResponse(token, "Bearer");
     }
 }
+

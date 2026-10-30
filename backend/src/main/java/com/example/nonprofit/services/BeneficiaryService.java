@@ -76,8 +76,7 @@ public class BeneficiaryService {
                 passwordEncoder.encode("Beneficiary1234"),
                 request.getCity(),
                 category,
-                status
-        );
+                status);
 
         Beneficiary saved = beneficiaryRepository.save(beneficiary);
         return BeneficiaryResponse.fromEntity(saved);
@@ -111,7 +110,8 @@ public class BeneficiaryService {
         if (request.getCategoryId() != null) {
             return categoryRepository.findById(request.getCategoryId())
                     .orElseThrow(() -> new ResponseStatusException(
-                            HttpStatus.BAD_REQUEST, "Beneficiary category not found with id: " + request.getCategoryId()));
+                            HttpStatus.BAD_REQUEST,
+                            "Beneficiary category not found with id: " + request.getCategoryId()));
         }
         if (request.getCategory() != null && !request.getCategory().isBlank()) {
             return categoryRepository.findByNameIgnoreCase(request.getCategory().trim())

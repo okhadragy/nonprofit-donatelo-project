@@ -13,6 +13,6 @@ export class DonationSubject {
   }
 
   notifyObservers(donation) {
-    this.observers.forEach((observer) => observer(donation));
+    this.observers.forEach((observer) => observer.update(donation));
   }
 }

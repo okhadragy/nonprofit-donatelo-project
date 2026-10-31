@@ -31,6 +31,7 @@ main { padding: 32px 40px; max-width: 1100px; width: 100%; }
 }
 .announcement strong { color: var(--accent-dark); }
 .announcement p { margin: 2px 0 0; color: var(--muted); }
+.announcement-item + .announcement-item { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
 .announcement-dismiss {
   border: 0; background: none; color: var(--muted); font-size: 1.25rem;
   line-height: 1; cursor: pointer; padding: 0;

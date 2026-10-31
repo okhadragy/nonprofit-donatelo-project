@@ -11,6 +11,8 @@ import EventPage from "./components/EventPage.jsx";
 import AuthPage from "./components/AuthPage.jsx";
 import Announcement from "./components/Announcement.jsx";
 import { DonationSubject } from "./observers/DonationSubject.js";
+import { DonationInSiteNotifier } from "./observers/DonationInSiteNotifier.js";
+import { DonationSmsNotifier } from "./observers/DonationSmsNotifier.js";
 
 export default function App() {
   const [token, setToken] = useState(
@@ -21,15 +23,25 @@ export default function App() {
   const [backend, setBackend] = useState("checking");
   const [donationTypes, setDonationTypes] = useState([]);
   const [donors, setDonors] = useState([]);
-  const [announcement, setAnnouncement] = useState(null);
+  const [notifications, setNotifications] = useState([]);
   const donationSubject = useRef(new DonationSubject()).current;
 
   useEffect(() => {
-    const unsubscribe = donationSubject.addObserver((donation) => {
-      const donor = donation.donorName ? ` from ${donation.donorName}` : "";
-      setAnnouncement(`A donation of $${Number(donation.amount).toLocaleString()} was added${donor}.`);
-    });
-    return unsubscribe;
+    const addNotification = (notification) => {
+      setNotifications((current) => [
+        ...current,
+        { ...notification, id: `${Date.now()}-${notification.channel}` },
+      ]);
+    };
+    const inSiteNotifier = new DonationInSiteNotifier(addNotification);
+    const smsNotifier = new DonationSmsNotifier(addNotification);
+    const removeInSiteNotifier = donationSubject.addObserver(inSiteNotifier);
+    const removeSmsNotifier = donationSubject.addObserver(smsNotifier);
+
+    return () => {
+      removeInSiteNotifier();
+      removeSmsNotifier();
+    };
   }, [donationSubject]);
 
   const checkBackend = () => {
@@ -98,7 +110,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <Announcement message={announcement} onDismiss={() => setAnnouncement(null)} />
+      <Announcement notifications={notifications} onDismiss={() => setNotifications([])} />
       <Sidebar
         page={page}
         onNavigate={setPage}

@@ -8,6 +8,7 @@ import ResourcePage from "./components/ResourcePage.jsx";
 import DonationPage from "./components/DonationPage.jsx";
 import BeneficiaryPage from "./components/BeneficiaryPage.jsx";
 import EventPage from "./components/EventPage.jsx";
+import VolunteerPage from "./components/VolunteerPage.jsx";
 import AuthPage from "./components/AuthPage.jsx";
 import Announcement from "./components/Announcement.jsx";
 import { DonationSubject } from "./observers/DonationSubject.js";
@@ -125,6 +126,8 @@ export default function App() {
           <BeneficiaryPage />
         ) : page === "events" ? (
           <EventPage />
+        ) : page === "volunteers" ? (
+          <VolunteerPage />
         ) : (
           <ResourcePage
             key={page}

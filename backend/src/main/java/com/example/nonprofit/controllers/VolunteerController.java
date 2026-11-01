@@ -2,6 +2,8 @@ package com.example.nonprofit.controllers;
 
 import com.example.nonprofit.dto.VolunteerRequest;
 import com.example.nonprofit.dto.VolunteerResponse;
+import com.example.nonprofit.models.VolunteerManagement.Qualification;
+import com.example.nonprofit.models.VolunteerManagement.Role;
 import com.example.nonprofit.services.VolunteerService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +28,16 @@ public class VolunteerController {
             return volunteerService.filterVolunteers(roleIds, qualificationIds);
         }
         return volunteerService.getAllVolunteers();
+    }
+
+    @GetMapping("/roles")
+    public List<Role> getAllRoles() {
+        return volunteerService.getAllRoles();
+    }
+
+    @GetMapping("/qualifications")
+    public List<Qualification> getAllQualifications() {
+        return volunteerService.getAllQualifications();
     }
 
     @GetMapping("/role/{roleId}")

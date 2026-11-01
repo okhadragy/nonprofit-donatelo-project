@@ -40,6 +40,14 @@ public class VolunteerService {
         return responses;
     }
 
+    public List<Role> getAllRoles() {
+        return roleRepository.findAll();
+    }
+
+    public List<Qualification> getAllQualifications() {
+        return qualificationRepository.findAll();
+    }
+
     public Volunteer findVolunteerOrThrow(Long id) {
         return volunteerRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(

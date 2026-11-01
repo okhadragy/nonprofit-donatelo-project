@@ -475,3 +475,123 @@ export async function deleteEventRegistration(id) {
     throw new Error(err.message || `Failed to delete registration (${res.status})`);
   }
 }
+
+
+// --- Volunteers ---
+
+export async function fetchVolunteers(options = {}) {
+  const params = new URLSearchParams();
+  if (options.roleIds && options.roleIds.length > 0) {
+    params.append("roleIds", options.roleIds.join(","));
+  }
+  if (options.qualificationIds && options.qualificationIds.length > 0) {
+    params.append("qualificationIds", options.qualificationIds.join(","));
+  }
+  const query = params.toString() ? `?${params.toString()}` : "";
+  const res = await authenticatedFetch(`/volunteers${query}`);
+  if (!res.ok) throw new Error("Failed to fetch volunteers");
+  return res.json();
+}
+
+export async function fetchVolunteerById(id) {
+  const res = await authenticatedFetch(`/volunteers/${id}`);
+  if (!res.ok) throw new Error("Failed to fetch volunteer");
+  return res.json();
+}
+
+export async function updateVolunteer(id, data) {
+  const res = await authenticatedFetch(`/volunteers/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to update volunteer (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function deleteVolunteer(id) {
+  const res = await authenticatedFetch(`/volunteers/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to delete volunteer (${res.status})`);
+  }
+}
+
+export async function fetchVolunteerRoles() {
+  const res = await authenticatedFetch(`/volunteers/roles`);
+  if (!res.ok) throw new Error("Failed to fetch volunteer roles");
+  return res.json();
+}
+
+export async function fetchVolunteerQualifications() {
+  const res = await authenticatedFetch(`/volunteers/qualifications`);
+  if (!res.ok) throw new Error("Failed to fetch volunteer qualifications");
+  return res.json();
+}
+
+// --- Volunteer Assignments ---
+
+export async function fetchVolunteerAssignmentsByEvent(eventId) {
+  const res = await authenticatedFetch(`/volunteer-assignments/event/${eventId}`);
+  if (!res.ok) throw new Error(`Failed to fetch event volunteer assignments`);
+  return res.json();
+}
+
+export async function fetchRolesForEvent(eventId) {
+  const res = await authenticatedFetch(`/volunteer-assignments/event/${eventId}/roles`);
+  if (!res.ok) throw new Error(`Failed to fetch roles for event`);
+  return res.json();
+}
+
+export async function fetchQualificationsForEvent(eventId) {
+  const res = await authenticatedFetch(`/volunteer-assignments/event/${eventId}/qualifications`);
+  if (!res.ok) throw new Error(`Failed to fetch qualifications for event`);
+  return res.json();
+}
+
+export async function fetchVolunteerAssignmentsByVolunteer(volunteerId) {
+  const res = await authenticatedFetch(`/volunteer-assignments/volunteer/${volunteerId}`);
+  if (!res.ok) throw new Error(`Failed to fetch assignments for volunteer`);
+  return res.json();
+}
+
+export async function createVolunteerAssignment(data) {
+  const res = await authenticatedFetch(`/volunteer-assignments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to create volunteer assignment (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function updateVolunteerAssignment(id, data) {
+  const res = await authenticatedFetch(`/volunteer-assignments/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to update volunteer assignment (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function deleteVolunteerAssignment(id) {
+  const res = await authenticatedFetch(`/volunteer-assignments/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to delete volunteer assignment (${res.status})`);
+  }
+}

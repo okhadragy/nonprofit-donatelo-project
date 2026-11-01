@@ -23,6 +23,7 @@ import com.example.nonprofit.document_factory.DocumentFactory;
 import com.example.nonprofit.document_factory.ReceiptDocumentFactory;
 import com.example.nonprofit.document_factory.TaxDocumentFactory;
 import com.example.nonprofit.donation_observer.DonationSubject;
+import com.example.nonprofit.donation_strategy.DonationStrategyContext;
 
 @Service
 public class DonationService {
@@ -31,16 +32,18 @@ public class DonationService {
     private final DonationTypeRepository donationTypeRepository;
     private final UserRepository userRepository;
     private final DonationSubject donationSubject;
+    private final DonationStrategyContext donationStrategyContext;
   
 
     public DonationService(
             DonationRepository donationRepository,
             DonationTypeRepository donationTypeRepository,
-            UserRepository userRepository,DonationSubject donationSubject) {
+            UserRepository userRepository,DonationSubject donationSubject, DonationStrategyContext donationStrategyContext) {
         this.donationRepository = donationRepository;
         this.donationTypeRepository = donationTypeRepository;
         this.userRepository = userRepository;
         this.donationSubject = donationSubject;
+        this.donationStrategyContext = donationStrategyContext;
     }
 
     public List<DonationResponse> getAll() {
@@ -53,6 +56,12 @@ public class DonationService {
         Donation donation = findDonationOrThrow(id);
         return DonationResponse.fromEntity(donation);
     }
+
+    public void processDonation(String method) {
+        donationStrategyContext.setStrategy(method);
+        donationStrategyContext.processDonation();
+    }
+
     public String generateDocument(Long id, String type) {
         Donation donation = findDonationOrThrow(id);
         try {

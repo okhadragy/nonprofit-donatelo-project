@@ -3,8 +3,6 @@ package com.example.nonprofit.controllers;
 import com.example.nonprofit.dto.DonationRequest;
 import com.example.nonprofit.dto.DonationResponse;
 import com.example.nonprofit.services.DonationService;
-import com.example.nonprofit.donation_strategy.DonationStrategyFactory;
-import com.example.nonprofit.donation_strategy.DonationStrategy;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -38,11 +36,7 @@ public class DonationController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public DonationResponse create(@RequestBody DonationRequest request) {
-        DonationStrategyFactory factory = DonationStrategyFactory.getInstance();
-        DonationStrategy strategy = factory.getDonationStrategy(request.getMethod());
-        if (strategy != null) {
-            strategy.processDonation();
-        }
+        service.processDonation(request.getMethod());
         return service.create(request);
     }
 

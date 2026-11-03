@@ -13,6 +13,7 @@ public class EventResponse {
     private String status;
     private Long categoryId;
     private String categoryName;
+    private EventDecoratorSettings decorators;
 
     public EventResponse() {
     }
@@ -34,7 +35,16 @@ public class EventResponse {
             dto.categoryName = event.getCategory().getName();
         }
 
+        dto.decorators = new EventDecoratorSettings(
+                event.isDecoratorFundraising(),
+                event.isDecoratorReminder(),
+                event.isDecoratorFollowUp(),
+                event.getDecoratorFundraisingGoal());
         return dto;
+    }
+
+    public EventDecoratorSettings getDecorators() {
+        return decorators;
     }
 
     public Long getId() {

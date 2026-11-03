@@ -28,6 +28,19 @@ public class Event implements EventComponent {
     @JoinColumn(name = "event_category_id")
     private EventCategory category;
 
+    // Decorator choices saved for this event (defaults match the UI's first-open state).
+    @Column(nullable = false)
+    private boolean decoratorFundraising = true;
+
+    @Column(nullable = false)
+    private boolean decoratorReminder = true;
+
+    @Column(nullable = false)
+    private boolean decoratorFollowUp = false;
+
+    @Column(nullable = false)
+    private String decoratorFundraisingGoal = "$50,000";
+
     public Event() {
     }
 
@@ -82,6 +95,38 @@ public class Event implements EventComponent {
 
     public void setCategory(EventCategory category) {
         this.category = category;
+    }
+
+    public boolean isDecoratorFundraising() {
+        return decoratorFundraising;
+    }
+
+    public void setDecoratorFundraising(boolean decoratorFundraising) {
+        this.decoratorFundraising = decoratorFundraising;
+    }
+
+    public boolean isDecoratorReminder() {
+        return decoratorReminder;
+    }
+
+    public void setDecoratorReminder(boolean decoratorReminder) {
+        this.decoratorReminder = decoratorReminder;
+    }
+
+    public boolean isDecoratorFollowUp() {
+        return decoratorFollowUp;
+    }
+
+    public void setDecoratorFollowUp(boolean decoratorFollowUp) {
+        this.decoratorFollowUp = decoratorFollowUp;
+    }
+
+    public String getDecoratorFundraisingGoal() {
+        return decoratorFundraisingGoal;
+    }
+
+    public void setDecoratorFundraisingGoal(String decoratorFundraisingGoal) {
+        this.decoratorFundraisingGoal = decoratorFundraisingGoal;
     }
 
     @Override

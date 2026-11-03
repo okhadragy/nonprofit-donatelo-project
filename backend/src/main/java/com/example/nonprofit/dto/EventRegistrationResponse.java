@@ -5,7 +5,8 @@ import com.example.nonprofit.models.events.EventRegistration;
 public class EventRegistrationResponse {
 
     private Long id;
-    private String attendeeName;
+    private Long userId;
+    private String userName;
     private String attendanceStatus;
     private Long eventId;
     private String eventTitle;
@@ -18,8 +19,12 @@ public class EventRegistrationResponse {
     public static EventRegistrationResponse fromEntity(EventRegistration registration) {
         EventRegistrationResponse dto = new EventRegistrationResponse();
         dto.id = registration.getId();
-        dto.attendeeName = registration.getAttendeeName();
         dto.attendanceStatus = registration.getAttendanceStatus();
+
+        if (registration.getUser() != null) {
+            dto.userId = registration.getUser().getId();
+            dto.userName = registration.getUser().getDisplayName();
+        }
 
         if (registration.getEvent() != null) {
             dto.eventId = registration.getEvent().getId();
@@ -38,8 +43,12 @@ public class EventRegistrationResponse {
         return id;
     }
 
-    public String getAttendeeName() {
-        return attendeeName;
+    public Long getUserId() {
+        return userId;
+    }
+
+    public String getUserName() {
+        return userName;
     }
 
     public String getAttendanceStatus() {

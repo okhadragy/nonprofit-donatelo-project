@@ -3,6 +3,7 @@ package com.example.nonprofit.controllers;
 import com.example.nonprofit.dto.DecoratedEventResponse;
 import com.example.nonprofit.dto.EventCommunicationRequest;
 import com.example.nonprofit.dto.EventCommunicationResponse;
+import com.example.nonprofit.dto.EventDecoratorSettings;
 import com.example.nonprofit.dto.EventRequest;
 import com.example.nonprofit.dto.EventResponse;
 import com.example.nonprofit.services.EventService;
@@ -96,10 +97,12 @@ public class EventController {
     }
 
     /**
-     * Endpoint to view the live notification log from the EventSubject observer pipeline.
+     * Saves which decorators are enabled for an event (restored when the dialog is reopened).
      */
-    @GetMapping("/observer-logs")
-    public List<String> getObserverLogs() {
-        return service.getNotificationLogs();
+    @PutMapping("/{id}/decorators")
+    public EventResponse saveDecorators(
+            @PathVariable Long id,
+            @RequestBody EventDecoratorSettings settings) {
+        return service.saveDecorators(id, settings);
     }
 }

@@ -14,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.example.nonprofit.dto.DecoratedEventResponse;
 import com.example.nonprofit.dto.EventCommunicationRequest;
 import com.example.nonprofit.dto.EventCommunicationResponse;
+import com.example.nonprofit.dto.EventDecoratorSettings;
 import com.example.nonprofit.dto.EventRequest;
 import com.example.nonprofit.dto.EventResponse;
 import com.example.nonprofit.event_decorator.EventComponent;
@@ -189,14 +190,14 @@ public class EventService {
                 : "REMINDER";
 
         List<String> recipientNames = registrations.stream()
-                .map(EventRegistration::getAttendeeName)
+                .map(reg -> reg.getUser().getDisplayName())
                 .collect(Collectors.toList());
 
         for (EventRegistration reg : registrations) {
             eventSubject.notifyEventChanged(
                     event,
                     "ATTENDEE_" + type,
-                    "Dispatched to " + reg.getAttendeeName() + " | Subject: " + subject + " | Message: " + message);
+                    "Dispatched to " + reg.getUser().getDisplayName() + " | Subject: " + subject + " | Message: " + message);
         }
 
         if (registrations.isEmpty()) {
@@ -217,8 +218,31 @@ public class EventService {
                 new Date());
     }
 
-    public List<String> getNotificationLogs() {
-        return eventSubject.getNotificationLog();
+    /**
+     * Saves the decorator choices for an event so they are restored the next time
+     * the decorator dialog is opened.
+     */
+    public EventResponse saveDecorators(Long id, EventDecoratorSettings settings) {
+        if (settings == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Decorator settings are required");
+        }
+        Event event = findEventOrThrow(id);
+        String goal = settings.getFundraisingGoal();
+        event.setDecoratorFundraising(settings.isFundraising());
+        event.setDecoratorReminder(settings.isReminder());
+        event.setDecoratorFollowUp(settings.isFollowup());
+        event.setDecoratorFundraisingGoal(
+                goal != null && !goal.isBlank() ? goal.trim() : "$50,000");
+        Event saved = eventRepository.save(event);
+        eventSubject.notifyEventChanged(
+                saved,
+                "DECORATORS_SAVED",
+                "Fundraising=" + saved.isDecoratorFundraising()
+                        + ", Reminder=" + saved.isDecoratorReminder()
+                        + ", FollowUp=" + saved.isDecoratorFollowUp()
+                        + ", Goal=" + saved.getDecoratorFundraisingGoal());
+        return EventResponse.fromEntity(saved);
     }
 
     private Event findEventOrThrow(Long id) {

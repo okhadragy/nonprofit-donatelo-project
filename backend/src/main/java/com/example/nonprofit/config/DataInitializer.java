@@ -20,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -214,12 +215,18 @@ public class DataInitializer {
                 ticketRepository.saveAll(List.of(vipGala, standardGala, freeWorkshop, outreachVolunteer));
 
                 if (registrationRepository.count() == 0) {
-                    EventRegistration reg1 = new EventRegistration("Youssef Ibrahim", "Confirmed", galaEvent, vipGala);
-                    EventRegistration reg2 = new EventRegistration("Layla Mostafa", "Registered", galaEvent, standardGala);
-                    EventRegistration reg3 = new EventRegistration("Kareem Tarek", "Attended", workshopEvent, freeWorkshop);
-                    EventRegistration reg4 = new EventRegistration("Nouran Adel", "Registered", outreachEvent, outreachVolunteer);
+                    // Registrations are linked to the seeded users
+                    List<EventRegistration> registrations = new ArrayList<>();
+                    userRepository.findByUsername("ahmed").ifPresent(u ->
+                        registrations.add(new EventRegistration(u, "Confirmed", galaEvent, vipGala)));
+                    userRepository.findByUsername("sara").ifPresent(u ->
+                        registrations.add(new EventRegistration(u, "Registered", galaEvent, standardGala)));
+                    userRepository.findByUsername("omarfathy").ifPresent(u ->
+                        registrations.add(new EventRegistration(u, "Attended", workshopEvent, freeWorkshop)));
+                    userRepository.findByUsername("mona").ifPresent(u ->
+                        registrations.add(new EventRegistration(u, "Registered", outreachEvent, outreachVolunteer)));
 
-                    registrationRepository.saveAll(List.of(reg1, reg2, reg3, reg4));
+                    registrationRepository.saveAll(registrations);
                 }
             }
 

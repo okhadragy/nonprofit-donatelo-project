@@ -2,17 +2,17 @@ package com.example.nonprofit.dto;
 
 public class EventRegistrationRequest {
 
-    private String attendeeName;
+    private Long userId;
     private String attendanceStatus;
     private Long eventId;
     private Long ticketId;
 
-    public String getAttendeeName() {
-        return attendeeName;
+    public Long getUserId() {
+        return userId;
     }
 
-    public void setAttendeeName(String attendeeName) {
-        this.attendeeName = attendeeName;
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public String getAttendanceStatus() {

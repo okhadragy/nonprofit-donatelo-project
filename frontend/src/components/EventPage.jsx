@@ -18,7 +18,8 @@ import {
   deleteEventRegistration,
   fetchDecoratedEvent,
   sendEventCommunication,
-  fetchEventObserverLogs,
+  saveEventDecorators,
+  fetchUsers,
 } from "../api.js";
 import ConfirmModal from "./ConfirmModal.jsx";
 
@@ -29,6 +30,15 @@ const pillClass = (value) =>
     ? "pill warn"
     : "pill";
 
+const DEFAULT_DECORATORS = {
+  fundraising: true,
+  reminder: true,
+  followup: false,
+  fundraisingGoal: "$50,000",
+};
+
+const userLabel = (u) => u.name || u.username;
+
 export default function EventPage() {
   const [activeTab, setActiveTab] = useState("events");
 
@@ -36,7 +46,7 @@ export default function EventPage() {
   const [categories, setCategories] = useState([]);
   const [tickets, setTickets] = useState([]);
   const [registrations, setRegistrations] = useState([]);
-  const [observerLogs, setObserverLogs] = useState([]);
+  const [users, setUsers] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -50,12 +60,7 @@ export default function EventPage() {
 
   // Decorator Pattern Modal State
   const [decoratingEvent, setDecoratingEvent] = useState(null);
-  const [decoratorOptions, setDecoratorOptions] = useState({
-    fundraising: true,
-    reminder: true,
-    followup: false,
-    fundraisingGoal: "$50,000",
-  });
+  const [decoratorOptions, setDecoratorOptions] = useState(DEFAULT_DECORATORS);
   const [decoratedResult, setDecoratedResult] = useState(null);
   const [isDecoratingLoading, setIsDecoratingLoading] = useState(false);
 
@@ -82,18 +87,18 @@ export default function EventPage() {
     setLoading(true);
     setError(null);
     try {
-      const [eData, cData, tData, rData, logs] = await Promise.all([
+      const [eData, cData, tData, rData, uData] = await Promise.all([
         fetchEvents(),
         fetchEventCategories(),
         fetchTickets(),
         fetchEventRegistrations(),
-        fetchEventObserverLogs().catch(() => []),
+        fetchUsers().catch(() => []),
       ]);
       setEvents(eData);
       setCategories(cData);
       setTickets(tData);
       setRegistrations(rData);
-      setObserverLogs(logs);
+      setUsers(uData);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -104,15 +109,6 @@ export default function EventPage() {
   useEffect(() => {
     loadAll();
   }, []);
-
-  const refreshLogs = async () => {
-    try {
-      const logs = await fetchEventObserverLogs();
-      setObserverLogs(logs);
-    } catch (err) {
-      console.warn("Could not load observer logs:", err);
-    }
-  };
 
   // --- Events actions ---
   const openAddEvent = () => {
@@ -169,14 +165,33 @@ export default function EventPage() {
   // --- Decorator Pattern Actions ---
   const openDecoratorModal = async (ev) => {
     setDecoratingEvent(ev);
-    const initialOpts = {
-      fundraising: true,
-      reminder: true,
-      followup: false,
-      fundraisingGoal: "$50,000",
-    };
+    // restore the choices saved for this event (falls back to the defaults)
+    const initialOpts = { ...DEFAULT_DECORATORS, ...(ev.decorators || {}) };
     setDecoratorOptions(initialOpts);
+    setDecoratedResult(null);
     await loadDecoratedPreview(ev.id, initialOpts);
+  };
+
+  // "Done": save the chosen decorators on the event, then close the dialog
+  const saveDecorators = async () => {
+    if (!decoratingEvent) return;
+    setIsSaving(true);
+    setError(null);
+    try {
+      await saveEventDecorators(decoratingEvent.id, {
+        fundraising: decoratorOptions.fundraising,
+        reminder: decoratorOptions.reminder,
+        followup: decoratorOptions.followup,
+        fundraisingGoal: decoratorOptions.fundraisingGoal,
+      });
+      showToast(`Decorators saved for "${decoratingEvent.title}".`);
+      setDecoratingEvent(null);
+      await loadAll();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const loadDecoratedPreview = async (eventId, opts) => {
@@ -227,13 +242,13 @@ export default function EventPage() {
       const result = await sendEventCommunication(communicatingEvent.id, commForm);
       setCommResult(result);
       showToast(`Dispatched to ${result.recipientsCount} attendee(s) via EventEmailNotifier!`);
-      await refreshLogs();
     } catch (err) {
       setError(err.message);
     } finally {
       setIsSendingComm(false);
     }
   };
+  const handleSendComm = handleSendCommunication;
 
   // --- Tickets actions ---
   const openAddTicket = () => {
@@ -282,23 +297,44 @@ export default function EventPage() {
   };
 
   // --- Registrations actions ---
+  // A ticket belongs to one event: returns the id of that event's first ticket ("" if none)
+  const firstTicketIdFor = (eventId) => {
+    const t = tickets.find((tk) => String(tk.eventId) === String(eventId));
+    return t ? String(t.id) : "";
+  };
+
+  // Only events that have at least one ticket can be registered for
+  const eventsWithTickets = events.filter((ev) =>
+    tickets.some((tk) => String(tk.eventId) === String(ev.id))
+  );
+
   const openAddRegistration = () => {
+    const eventId = eventsWithTickets[0] ? String(eventsWithTickets[0].id) : "";
     setEditingRegistration({
       id: null,
-      attendeeName: "",
+      userId: "",
       attendanceStatus: "Registered",
-      eventId: events[0] ? String(events[0].id) : "",
-      ticketId: tickets[0] ? String(tickets[0].id) : "",
+      eventId,
+      ticketId: firstTicketIdFor(eventId),
     });
   };
 
   const openEditRegistration = (row) => {
+    // fall back to an event that has tickets if the saved one has none
+    const hasTickets = eventsWithTickets.some((ev) => String(ev.id) === String(row.eventId));
+    const eventId = hasTickets
+      ? String(row.eventId)
+      : eventsWithTickets[0]
+      ? String(eventsWithTickets[0].id)
+      : "";
     setEditingRegistration({
       id: row.id,
-      attendeeName: row.attendeeName,
+      userId: row.userId ? String(row.userId) : "",
       attendanceStatus: row.attendanceStatus || "Registered",
-      eventId: row.eventId ? String(row.eventId) : "",
-      ticketId: row.ticketId ? String(row.ticketId) : "",
+      eventId,
+      // the ticket is required, so a registration saved without one gets the event's first ticket
+      ticketId:
+        hasTickets && row.ticketId ? String(row.ticketId) : firstTicketIdFor(eventId),
     });
   };
 
@@ -307,11 +343,13 @@ export default function EventPage() {
     setIsSaving(true);
     setError(null);
     try {
+      if (!editingRegistration.userId) throw new Error("Please select an attendee.");
+      if (!editingRegistration.ticketId) throw new Error("Please select a ticket for this event.");
       const payload = {
-        attendeeName: editingRegistration.attendeeName,
+        userId: Number(editingRegistration.userId),
         attendanceStatus: editingRegistration.attendanceStatus,
         eventId: Number(editingRegistration.eventId),
-        ticketId: editingRegistration.ticketId ? Number(editingRegistration.ticketId) : null,
+        ticketId: Number(editingRegistration.ticketId),
       };
 
       if (editingRegistration.id === null) {
@@ -402,17 +440,13 @@ export default function EventPage() {
   );
 
   const visibleRegistrations = registrations.filter((r) =>
-    `${r.attendeeName} ${r.eventTitle || ""} ${r.ticketName || ""} ${r.attendanceStatus || ""}`
+    `${r.userName || ""} ${r.eventTitle || ""} ${r.ticketName || ""} ${r.attendanceStatus || ""}`
       .toLowerCase()
       .includes(query.toLowerCase())
   );
 
   const visibleCategories = categories.filter((c) =>
     c.name.toLowerCase().includes(query.toLowerCase())
-  );
-
-  const visibleLogs = observerLogs.filter((l) =>
-    l.toLowerCase().includes(query.toLowerCase())
   );
 
   return (
@@ -437,13 +471,9 @@ export default function EventPage() {
             <button className="btn primary" onClick={openAddRegistration}>
               + Register Attendee
             </button>
-          ) : activeTab === "categories" ? (
+          ) : (
             <button className="btn primary" onClick={openAddCategory}>
               + Add Category
-            </button>
-          ) : (
-            <button className="btn" onClick={refreshLogs}>
-              ↻ Refresh Logs
             </button>
           )}
         </div>
@@ -532,16 +562,6 @@ export default function EventPage() {
           }}
         >
           Categories ({categories.length})
-        </button>
-        <button
-          className={`btn ${activeTab === "observer" ? "primary" : ""}`}
-          onClick={() => {
-            setActiveTab("observer");
-            setQuery("");
-            refreshLogs();
-          }}
-        >
-          Observer Logs ({observerLogs.length})
         </button>
       </div>
 
@@ -709,7 +729,7 @@ export default function EventPage() {
                 <tbody>
                   {visibleRegistrations.map((rg) => (
                     <tr key={rg.id}>
-                      <td><strong>{rg.attendeeName}</strong></td>
+                      <td><strong>{rg.userName}</strong></td>
                       <td>{rg.eventTitle || "—"}</td>
                       <td>{rg.ticketName || "Standard Entry"}</td>
                       <td>
@@ -733,7 +753,7 @@ export default function EventPage() {
                               setDeletingItem({
                                 type: "registration",
                                 id: rg.id,
-                                name: rg.attendeeName,
+                                name: rg.userName,
                               })
                             }
                           >
@@ -753,7 +773,7 @@ export default function EventPage() {
                 </tbody>
               </table>
             </>
-          ) : activeTab === "categories" ? (
+          ) : (
             <>
               <table>
                 <thead>
@@ -801,41 +821,6 @@ export default function EventPage() {
                     <tr>
                       <td colSpan={3} className="empty">
                         No categories found.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </>
-          ) : (
-            /* Observer Tab */
-            <>
-              <div style={{ padding: "16px", borderBottom: "1px solid var(--line)" }}>
-                <strong>Event Observer Notification Pipeline</strong>
-                <p style={{ margin: "4px 0 0", color: "var(--muted)", fontSize: "0.9rem" }}>
-                  Real-time notification dispatches executed by <code>EventSubject</code> and delivered to <code>EventEmailNotifier</code>.
-                </p>
-              </div>
-              <table>
-                <thead>
-                  <tr>
-                    <th style={{ width: "60px" }}>#</th>
-                    <th>Observer Notification Dispatch Entry</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visibleLogs.map((log, idx) => (
-                    <tr key={idx}>
-                      <td style={{ color: "var(--muted)" }}>{idx + 1}</td>
-                      <td>
-                        <code style={{ fontSize: "0.85rem", wordBreak: "break-word" }}>{log}</code>
-                      </td>
-                    </tr>
-                  ))}
-                  {visibleLogs.length === 0 && (
-                    <tr>
-                      <td colSpan={2} className="empty">
-                        No observer events logged yet. Creating/updating an event or sending a reminder will record dispatches here.
                       </td>
                     </tr>
                   )}
@@ -997,9 +982,10 @@ export default function EventPage() {
               <button
                 type="button"
                 className="btn primary"
-                onClick={() => setDecoratingEvent(null)}
+                disabled={isSaving}
+                onClick={saveDecorators}
               >
-                Done
+                {isSaving ? "Saving…" : "Done"}
               </button>
             </div>
           </div>
@@ -1011,7 +997,7 @@ export default function EventPage() {
       {/* ============================================================ */}
       {communicatingEvent && (
         <div className="modal-backdrop">
-          <form className="modal-card" style={{ maxWidth: "560px" }} onSubmit={handleSendComm}>
+          <form className="modal-card" style={{ maxWidth: "560px" }} onSubmit={handleSendCommunication}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
                 <span className="pill warn" style={{ marginBottom: "6px", display: "inline-block" }}>
@@ -1047,7 +1033,7 @@ export default function EventPage() {
                 >
                   <strong>Registered Recipients ({eventRegs.length}): </strong>
                   {eventRegs.length > 0
-                    ? eventRegs.map((r) => r.attendeeName).join(", ")
+                    ? eventRegs.map((r) => r.userName).join(", ")
                     : "No attendees registered yet (dispatches broadcast notice)"}
                 </div>
               );
@@ -1278,18 +1264,26 @@ export default function EventPage() {
           <form className="modal-card" onSubmit={saveRegistration}>
             <h2>{editingRegistration.id ? "Edit Registration" : "Register Attendee"}</h2>
             <label>
-              Attendee Name
-              <input
-                type="text"
+              Attendee
+              <select
                 required
-                value={editingRegistration.attendeeName}
+                value={editingRegistration.userId}
                 onChange={(e) =>
                   setEditingRegistration({
                     ...editingRegistration,
-                    attendeeName: e.target.value,
+                    userId: e.target.value,
                   })
                 }
-              />
+              >
+                <option value="" disabled>
+                  Select a user…
+                </option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {userLabel(u)} (@{u.username}, {u.role})
+                  </option>
+                ))}
+              </select>
             </label>
             <label>
               Event
@@ -1300,10 +1294,17 @@ export default function EventPage() {
                   setEditingRegistration({
                     ...editingRegistration,
                     eventId: e.target.value,
+                    // a ticket belongs to one event, so pick that event's first ticket
+                    ticketId: firstTicketIdFor(e.target.value),
                   })
                 }
               >
-                {events.map((ev) => (
+                {eventsWithTickets.length === 0 && (
+                  <option value="" disabled>
+                    No events have tickets yet: add a ticket first
+                  </option>
+                )}
+                {eventsWithTickets.map((ev) => (
                   <option key={ev.id} value={ev.id}>
                     {ev.title}
                   </option>
@@ -1311,8 +1312,9 @@ export default function EventPage() {
               </select>
             </label>
             <label>
-              Ticket (Optional)
+              Ticket
               <select
+                required
                 value={editingRegistration.ticketId}
                 onChange={(e) =>
                   setEditingRegistration({
@@ -1321,7 +1323,11 @@ export default function EventPage() {
                   })
                 }
               >
-                <option value="">No Ticket</option>
+                {!firstTicketIdFor(editingRegistration.eventId) && (
+                  <option value="" disabled>
+                    No tickets for this event: add one in the Tickets tab
+                  </option>
+                )}
                 {tickets
                   .filter((t) => String(t.eventId) === String(editingRegistration.eventId))
                   .map((t) => (

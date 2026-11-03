@@ -336,9 +336,24 @@ export async function sendEventReminder(id, data = {}) {
   return res.json();
 }
 
-export async function fetchEventObserverLogs() {
-  const res = await authenticatedFetch(`/events/observer-logs`);
-  if (!res.ok) throw new Error("Failed to fetch event observer logs");
+// Saves which decorators are enabled for an event so they are restored on reopen.
+export async function saveEventDecorators(id, settings) {
+  const res = await authenticatedFetch(`/events/${id}/decorators`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(settings),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to save decorators (${res.status})`);
+  }
+  return res.json();
+}
+
+// All users in the database (used by the registration attendee drop-down).
+export async function fetchUsers() {
+  const res = await authenticatedFetch(`/users`);
+  if (!res.ok) throw new Error("Failed to fetch users");
   return res.json();
 }
 

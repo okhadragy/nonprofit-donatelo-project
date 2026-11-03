@@ -1,5 +1,6 @@
 package com.example.nonprofit.models.events;
 
+import com.example.nonprofit.models.users.User;
 import jakarta.persistence.*;
 
 @Entity
@@ -10,10 +11,11 @@ public class EventRegistration {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String attendeeName;
-
     private String attendanceStatus;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "event_id")
@@ -26,9 +28,9 @@ public class EventRegistration {
     public EventRegistration() {
     }
 
-    public EventRegistration(String attendeeName, String attendanceStatus,
+    public EventRegistration(User user, String attendanceStatus,
                              Event event, Ticket ticket) {
-        this.attendeeName = attendeeName;
+        this.user = user;
         this.attendanceStatus = attendanceStatus;
         this.event = event;
         this.ticket = ticket;
@@ -38,12 +40,12 @@ public class EventRegistration {
         return id;
     }
 
-    public String getAttendeeName() {
-        return attendeeName;
+    public User getUser() {
+        return user;
     }
 
-    public void setAttendeeName(String attendeeName) {
-        this.attendeeName = attendeeName;
+    public void setUser(User user) {
+        this.user = user;
     }
 
     public String getAttendanceStatus() {

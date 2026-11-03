@@ -53,6 +53,11 @@ public abstract class User {
         return email;
     }
 
+    /** Name to show in lists and messages (falls back to the username). */
+    public String getDisplayName() {
+        return name != null && !name.isBlank() ? name : username;
+    }
+
     public String getUsername() {
         return username;
     }

@@ -12,9 +12,11 @@ import com.example.nonprofit.dto.EventRegistrationResponse;
 import com.example.nonprofit.models.events.Event;
 import com.example.nonprofit.models.events.EventRegistration;
 import com.example.nonprofit.models.events.Ticket;
+import com.example.nonprofit.models.users.User;
 import com.example.nonprofit.repositories.EventRegistrationRepository;
 import com.example.nonprofit.repositories.EventRepository;
 import com.example.nonprofit.repositories.TicketRepository;
+import com.example.nonprofit.repositories.UserRepository;
 
 @Service
 public class EventRegistrationService {
@@ -22,14 +24,17 @@ public class EventRegistrationService {
     private final EventRegistrationRepository registrationRepository;
     private final EventRepository eventRepository;
     private final TicketRepository ticketRepository;
+    private final UserRepository userRepository;
 
     public EventRegistrationService(
             EventRegistrationRepository registrationRepository,
             EventRepository eventRepository,
-            TicketRepository ticketRepository) {
+            TicketRepository ticketRepository,
+            UserRepository userRepository) {
         this.registrationRepository = registrationRepository;
         this.eventRepository = eventRepository;
         this.ticketRepository = ticketRepository;
+        this.userRepository = userRepository;
     }
 
     public List<EventRegistrationResponse> getAll() {
@@ -57,16 +62,10 @@ public class EventRegistrationService {
                         HttpStatus.BAD_REQUEST,
                         "Event not found with id: " + request.getEventId()));
 
-        Ticket ticket = null;
-        if (request.getTicketId() != null) {
-            ticket = ticketRepository.findById(request.getTicketId())
-                    .orElseThrow(() -> new ResponseStatusException(
-                            HttpStatus.BAD_REQUEST,
-                            "Ticket not found with id: " + request.getTicketId()));
-        }
+        Ticket ticket = resolveTicket(request.getTicketId(), event);
 
         EventRegistration registration = new EventRegistration();
-        registration.setAttendeeName(request.getAttendeeName());
+        registration.setUser(resolveUser(request.getUserId()));
         registration.setAttendanceStatus(
                 request.getAttendanceStatus() != null ? request.getAttendanceStatus() : "Registered");
         registration.setEvent(event);
@@ -80,25 +79,16 @@ public class EventRegistrationService {
         EventRegistration existing = findOrThrow(id);
         validateRequest(request);
 
-        existing.setAttendeeName(request.getAttendeeName());
+        existing.setUser(resolveUser(request.getUserId()));
         existing.setAttendanceStatus(
                 request.getAttendanceStatus() != null ? request.getAttendanceStatus() : existing.getAttendanceStatus());
 
-        if (request.getEventId() != null) {
-            Event event = eventRepository.findById(request.getEventId())
-                    .orElseThrow(() -> new ResponseStatusException(
-                            HttpStatus.BAD_REQUEST,
-                            "Event not found with id: " + request.getEventId()));
-            existing.setEvent(event);
-        }
-
-        if (request.getTicketId() != null) {
-            Ticket ticket = ticketRepository.findById(request.getTicketId())
-                    .orElseThrow(() -> new ResponseStatusException(
-                            HttpStatus.BAD_REQUEST,
-                            "Ticket not found with id: " + request.getTicketId()));
-            existing.setTicket(ticket);
-        }
+        Event event = eventRepository.findById(request.getEventId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Event not found with id: " + request.getEventId()));
+        existing.setEvent(event);
+        existing.setTicket(resolveTicket(request.getTicketId(), event));
 
         EventRegistration saved = registrationRepository.save(existing);
         return EventRegistrationResponse.fromEntity(saved);
@@ -115,12 +105,37 @@ public class EventRegistrationService {
                         HttpStatus.NOT_FOUND, "Event registration not found"));
     }
 
-    private void validateRequest(EventRegistrationRequest request) {
-        if (request.getAttendeeName() == null || request.getAttendeeName().isBlank()) {
+    /** The attendee must be an existing user. */
+    private User resolveUser(Long userId) {
+        if (userId == null) {
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "Attendee name is required");
+                    HttpStatus.BAD_REQUEST, "User is required");
         }
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "User not found with id: " + userId));
+    }
 
+    /** A ticket is required and must belong to the registration's event. */
+    private Ticket resolveTicket(Long ticketId, Event event) {
+        if (ticketId == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Ticket is required");
+        }
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Ticket not found with id: " + ticketId));
+        if (ticket.getEvent() == null || !ticket.getEvent().getId().equals(event.getId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Ticket does not belong to the selected event");
+        }
+        return ticket;
+    }
+
+    private void validateRequest(EventRegistrationRequest request) {
         if (request.getEventId() == null) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST, "Event ID is required");

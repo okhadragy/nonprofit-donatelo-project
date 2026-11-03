@@ -186,34 +186,46 @@ hide empty members
 class Donation
 class Event
 
-' ---------- STRATEGY + FACTORY (Singleton) ----------
-package "Strategy Pattern + Factory (Singleton)" as Strategy {
-  class DonationStrategyFactory {
-    - {static} instance: DonationStrategyFactory
-    - DonationStrategyFactory()
-    + {static} getInstance(): DonationStrategyFactory
-    + createDonation(method: String): DonationStrategy
+' ---------- STRATEGY PATTERN (Context) ----------
+package "Strategy Pattern (Context)" as Strategy {
+  class DonationStrategyContext {
+    - strategies: Map<String, DonationStrategy>
+    - strategy: DonationStrategy
+    - strategyName: String
+    + setStrategy(strategyName: String)
+    + getStrategyName(): String
+    + processDonation()
   }
   interface DonationStrategy {
-    + process(amount: double): boolean
+    + getStrategyName(): String
+    + processDonation()
   }
   class CashDonation
   class CardDonation
   class CheckDonation
 
-  DonationStrategyFactory .down.> DonationStrategy : creates
+  DonationStrategyContext o-down- "1" DonationStrategy : delegates to
   DonationStrategy <|.. CashDonation
   DonationStrategy <|.. CardDonation
   DonationStrategy <|.. CheckDonation
 }
 
-' ---------- DOCUMENT FACTORY (Singleton) ----------
-package "Document Factory (Singleton)" as DocFactory {
-  class DocumentFactory {
-    - {static} instance: DocumentFactory
-    - DocumentFactory()
-    + {static} getInstance(): DocumentFactory
-    + createDocument(type: String): Document
+' ---------- DOCUMENT FACTORY (Factory Method + Singleton) ----------
+package "Document Factory (Factory Method + Singleton)" as DocFactory {
+  abstract class DocumentFactory {
+    + {abstract} createDocument(donation: Donation): Document
+  }
+  class ReceiptDocumentFactory {
+    - {static} INSTANCE: ReceiptDocumentFactory
+    - ReceiptDocumentFactory()
+    + {static} getInstance(): ReceiptDocumentFactory
+    + createDocument(donation: Donation): Document
+  }
+  class TaxDocumentFactory {
+    - {static} INSTANCE: TaxDocumentFactory
+    - TaxDocumentFactory()
+    + {static} getInstance(): TaxDocumentFactory
+    + createDocument(donation: Donation): Document
   }
   interface Document {
     + generate(): String
@@ -225,18 +237,28 @@ package "Document Factory (Singleton)" as DocFactory {
     + generate(): String
   }
 
-  DocumentFactory .down.> Document : creates
+  DocumentFactory <|-- ReceiptDocumentFactory
+  DocumentFactory <|-- TaxDocumentFactory
+  ReceiptDocumentFactory .down.> ReceiptDocument : creates
+  TaxDocumentFactory .down.> TaxDocument : creates
   Document <|.. ReceiptDocument
   Document <|.. TaxDocument
 }
 
 ' ---------- DONATION OBSERVER ----------
 package "Donation Observer" as DonationObserverPackage {
-  class DonationSubject {
-    - observers: List
+  interface Subject {
     + addObserver(observer: DonationObserver)
     + removeObserver(observer: DonationObserver)
     + notifyObservers()
+  }
+  class DonationSubject {
+    - observers: List<DonationObserver>
+    - message: String
+    + addObserver(observer: DonationObserver)
+    + removeObserver(observer: DonationObserver)
+    + notifyObservers()
+    + setMessage(message: String)
   }
   interface DonationObserver {
     + update(message: String)
@@ -244,9 +266,18 @@ package "Donation Observer" as DonationObserverPackage {
   class DonationEmailNotifier {
     + update(message: String)
   }
+  class DonationSmsNotifier {
+    + update(message: String)
+  }
+  class DonationInSiteNotifier {
+    + update(message: String)
+  }
 
+  Subject <|.. DonationSubject
   DonationSubject o-down- "0..*" DonationObserver : notifies
   DonationObserver <|.. DonationEmailNotifier
+  DonationObserver <|.. DonationSmsNotifier
+  DonationObserver <|.. DonationInSiteNotifier
 }
 
 ' ---------- EVENT OBSERVER ----------
@@ -292,7 +323,7 @@ package "Event Decorator" as Decorator {
 ' ---------- CROSS-PATTERN LINKS ----------
 ' Donation side (left): observer, strategy and document factories on one row
 DonationSubject .up.> Donation : monitors
-Donation .down.> DonationStrategyFactory : uses
+Donation .down.> DonationStrategyContext : uses
 Donation .down.> DocumentFactory : uses for documents
 
 ' Event side (right): decorator, then observer on the same row
@@ -301,21 +332,16 @@ Event .down.|> EventComponent
 
 ' ---------- LAYOUT ----------
 Donation -[hidden]right- Event
-DonationSubject -[hidden]right- DonationStrategyFactory
-DonationStrategyFactory -[hidden]right- DocumentFactory
+DonationSubject -[hidden]right- DonationStrategyContext
+DonationStrategyContext -[hidden]right- DocumentFactory
 DocumentFactory -[hidden]right- EventComponent
 EventComponent -[hidden]right- EventSubject
 
-note bottom of DonationStrategyFactory
-  Private constructor, one static
-  instance, getInstance() returns it.
-  Creates a strategy from the method.
-end note
-
-note bottom of DocumentFactory
-  Private constructor, one static
-  instance, getInstance() returns it.
-  Creates ReceiptDocument or TaxDocument.
+note bottom of ReceiptDocumentFactory
+  Concrete factories are Singletons
+  (private constructor, static getInstance).
+  ReceiptDocumentFactory creates ReceiptDocument.
+  TaxDocumentFactory creates TaxDocument.
 end note
 @enduml
 
@@ -558,9 +584,12 @@ end note
 
 ' ---------- PATTERN COLLABORATORS (collapsed, see diagram 2) ----------
 package "Patterns used by services" as PatternStubs {
-  class DonationStrategyFactory
+  class DonationStrategyContext
   interface DonationStrategy
-  class DocumentFactory
+  abstract class DocumentFactory
+  class ReceiptDocumentFactory
+  class TaxDocumentFactory
+  interface Subject
   class DonationSubject
   class EventSubject
   interface EventComponent
@@ -596,9 +625,11 @@ ResourceCategoryController ..> ResourceCategoryService
 ResourceCategoryService ..> ResourceCategoryRepository
 
 ' ---------- SERVICE -> PATTERN DEPENDENCIES ----------
-DonationService ..> DonationStrategyFactory : obtains strategy
+DonationService ..> DonationStrategyContext : executes strategy
 DonationService ..> DonationStrategy : processes donation
 DonationService ..> DocumentFactory : creates documents
+DonationService ..> ReceiptDocumentFactory : obtains instance
+DonationService ..> TaxDocumentFactory : obtains instance
 DonationService ..> DonationSubject : notifies observers
 EventService ..> EventSubject : notifies observers
 EventService ..> EventComponent : decorates events

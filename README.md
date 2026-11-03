@@ -1,47 +1,85 @@
-# Nonprofit Management System – React + Spring Boot demo
+# Nonprofit Donatelo – Management System
 
-A small UI demo. React shows an admin dashboard with mock data; Spring Boot exposes one
-endpoint (`GET /api/status`) so the UI can confirm it is connected. No database, auth, or
-business logic yet.
+A full-stack web application designed for charitable organizations to manage donations, community events, volunteer staffing, and beneficiary resource distribution.
 
-```
-nonprofit-demo/
-├── backend/    Spring Boot 3 (Java 17, Maven)  → http://localhost:8080
-└── frontend/   React 18 + Vite                  → http://localhost:5173
-```
+Built with a layered 3-tier architecture using a **Spring Boot 3** REST API backend and a **React 18** frontend.
 
-## Requirements
+---
+
+## Key Features
+
+- **Role-Based Security**: JWT authentication with distinct roles for Admin, Donor, Volunteer, and Beneficiary.
+- **Donation Processing**: Multi-method donation intake (Cash, Card, Check) with receipt and tax document generation.
+- **Volunteer Management**: Volunteer directory with skill/qualification filtering, event shift staffing, and hours tracking.
+- **Events & Ticketing**: Event scheduling, ticket tier management, attendee registration, and dynamic feature decoration.
+- **Resource Distribution**: Inventory cataloging and tracking of aid distributions to beneficiaries.
+
+---
+
+## Design Patterns
+
+| Pattern | Location | Description |
+| :--- | :--- | :--- |
+| **Strategy** | `donation_strategy/` | `DonationStrategyContext` delegates payment handling to `CashDonation`, `CardDonation`, or `CheckDonation`. |
+| **Factory Method + Singleton** | `document_factory/` | Abstract `DocumentFactory` with singleton concrete factories (`ReceiptDocumentFactory`, `TaxDocumentFactory`) creating receipt and tax documents. |
+| **Observer (Donations)** | `donation_observer/` | `DonationSubject` notifies subscribers (`EmailNotifier`, `SmsNotifier`, `InSiteNotifier`) on new donations. |
+| **Observer (Events)** | `event_observer/` | `EventSubject` pushes schedule and detail updates to `EventObserver` subscribers. |
+| **Decorator** | `event_decorator/` | `EventDecorator` dynamically adds features (`FundraisingDecorator`, `ReminderDecorator`, `FollowUpDecorator`) to an `EventComponent`. |
+
+---
+
+## Tech Stack
+
+- **Backend**: Java 17, Spring Boot 3.3.5, Spring Data JPA, Hibernate, Spring Security, JJWT
+- **Database**: H2 In-Memory Database (`jdbc:h2:mem:nonprofitdb`)
+- **Frontend**: React 18, Vite, CSS
+- **UML**: PlantUML (`nonprofit-class-diagram.puml`), Mermaid (`nonprofit-class-diagram-mermaid.md`)
+
+---
+
+## Getting Started
+
+### Prerequisites
 - Java 17+
-- Maven 3.9+
-- Node.js 18+
+- Node.js 18+ and npm
 
-## Run it
-Open two terminals.
-
-**1. Backend**
+### 1. Run the Backend
 ```bash
 cd backend
-mvn spring-boot:run
-```
-Check it: http://localhost:8080/api/status should return `{"status":"UP", ...}`.
+# Windows
+.\mvnw.cmd spring-boot:run
 
-**2. Frontend**
+# macOS / Linux
+./mvnw spring-boot:run
+```
+- API Base URL: `http://localhost:8080`
+- Health check: `http://localhost:8080/api/status`
+- H2 Console: `http://localhost:8080/h2-console` (User: `sa`, Password: empty)
+
+### 2. Run the Frontend
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-Open http://localhost:5173. The sidebar footer shows **Backend connected** when the API is
-reachable, or **Backend offline** (with a Retry link) when it is not. The four pages work either way.
+- Web Application: `http://localhost:5173`
 
-## Where things live
-- `frontend/src/data.js` – mock records
-- `frontend/src/config.js` – columns and form fields for each page
-- `frontend/src/components/ResourcePage.jsx` – the one table/form/CRUD page all four sections reuse
-- `frontend/src/api.js` – the only call to the backend
-- `backend/.../StatusController.java` – the one endpoint
-- `backend/.../CorsConfig.java` – allows `http://localhost:5173`
+---
 
-## Next steps (not included)
-Add real controllers per section in the backend, then swap each page's local state in
-`App.jsx` for calls in `api.js`. CRUD edits are held in memory and reset on refresh.
+## API Endpoints
+
+| Area | Endpoints |
+| :--- | :--- |
+| **Auth** | `POST /api/auth/register`, `POST /api/auth/login` |
+| **Donations** | `/api/donations`, `/api/donation-types`, `/api/donors` |
+| **Events** | `/api/events`, `/api/event-categories`, `/api/tickets`, `/api/event-registrations` |
+| **Volunteers** | `/api/volunteers`, `/api/volunteers/roles`, `/api/volunteers/qualifications`, `/api/volunteer-assignments` |
+| **Beneficiaries & Resources** | `/api/beneficiaries`, `/api/beneficiary-categories`, `/api/resources`, `/api/resource-categories` |
+| **System** | `GET /api/status` |
+
+---
+
+## Documentation & Diagrams
+
+- **PlantUML**: [`nonprofit-class-diagram.puml`](file:///e:/ASU/Fall%2026/Desing%20Patterns/Project/nonprofit-donatelo-project/nonprofit-class-diagram.puml)
+

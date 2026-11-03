@@ -60,7 +60,7 @@ package "Donations" as Donations {
     - id: Long
     - name: String
   }
-  note bottom of DonationType: Represents Donation Category / Type
+
 }
 
 package "Volunteer Management" as VolunteerModel {
@@ -121,7 +121,7 @@ package "Events" as Events {
   }
   class EventRegistration {
     - id: Long
-    - attendeeName: String
+
     - attendanceStatus: String
   }
 }
@@ -146,7 +146,7 @@ ResourceCategory "1" - "0..*" Resource : classifies
 ' ---- Events (lookup class goes OUTWARD / right)
 Event "0..*" - "1" EventCategory : classified by
 Event "1" -- "0..*" Ticket : offers
-Event "1" -- "0..*" EventRegistration : has
+
 Ticket "1" - "0..*" EventRegistration : selected for
 
 ' ---- Layout hints: keep the user branches side by side
@@ -337,12 +337,7 @@ DonationStrategyContext -[hidden]right- DocumentFactory
 DocumentFactory -[hidden]right- EventComponent
 EventComponent -[hidden]right- EventSubject
 
-note bottom of ReceiptDocumentFactory
-  Concrete factories are Singletons
-  (private constructor, static getInstance).
-  ReceiptDocumentFactory creates ReceiptDocument.
-  TaxDocumentFactory creates TaxDocument.
-end note
+
 @enduml
 
 
@@ -577,10 +572,7 @@ package "Repositories (Spring Data JPA)" as Repositories {
   }
 }
 
-note as RepoNote
-  Each repository extends JpaRepository<T, Long>,
-  so Spring Data JPA provides the CRUD methods.
-end note
+
 
 ' ---------- PATTERN COLLABORATORS (collapsed, see diagram 2) ----------
 package "Patterns used by services" as PatternStubs {

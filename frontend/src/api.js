@@ -543,9 +543,61 @@ export async function fetchVolunteerRoles() {
   return res.json();
 }
 
+export async function createVolunteerRole(data) {
+  const res = await authenticatedFetch(`/volunteers/roles`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to create role (${res.status})`);
+  }
+  return res.json();
+}
+
 export async function fetchVolunteerQualifications() {
   const res = await authenticatedFetch(`/volunteers/qualifications`);
   if (!res.ok) throw new Error("Failed to fetch volunteer qualifications");
+  return res.json();
+}
+
+export async function createVolunteerQualification(data) {
+  const res = await authenticatedFetch(`/volunteers/qualifications`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to create qualification (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function assignVolunteerRoles(id, roleIds) {
+  const res = await authenticatedFetch(`/volunteers/${id}/roles`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(roleIds),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to assign roles (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function assignVolunteerQualifications(id, qualificationIds) {
+  const res = await authenticatedFetch(`/volunteers/${id}/qualifications`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(qualificationIds),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to assign qualifications (${res.status})`);
+  }
   return res.json();
 }
 

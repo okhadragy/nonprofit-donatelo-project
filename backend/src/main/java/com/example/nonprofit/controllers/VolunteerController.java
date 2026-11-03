@@ -35,9 +35,21 @@ public class VolunteerController {
         return volunteerService.getAllRoles();
     }
 
+    @PostMapping("/roles")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Role createRole(@RequestBody Role role) {
+        return volunteerService.createRole(role);
+    }
+
     @GetMapping("/qualifications")
     public List<Qualification> getAllQualifications() {
         return volunteerService.getAllQualifications();
+    }
+
+    @PostMapping("/qualifications")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Qualification createQualification(@RequestBody Qualification qualification) {
+        return volunteerService.createQualification(qualification);
     }
 
     @GetMapping("/role/{roleId}")

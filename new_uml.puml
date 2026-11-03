@@ -1,4 +1,4 @@
-@startuml 1-domain-model
+@startuml
 ' =====================================================
 ' 1. DOMAIN MODEL
 ' Columns: Beneficiary | Donor | Volunteer (+ Admin)
@@ -121,7 +121,7 @@ package "Events" as Events {
   }
   class EventRegistration {
     - id: Long
-
+    - user: User
     - attendanceStatus: String
   }
 }
@@ -140,13 +140,14 @@ VolunteerAssignment "0..*" -- "1" Event : requires
 ' ---- Beneficiary column (lookup classes go OUTWARD / left)
 Beneficiary "0..*" -- "1" BeneficiaryCategory : classified by
 Beneficiary "1" -- "0..*" ResourceDistribution : receives
-Resource "1" - "0..*" ResourceDistribution : distributed as
-ResourceCategory "1" - "0..*" Resource : classifies
+Resource "1" -- "0..*" ResourceDistribution : distributed as
+ResourceCategory "1" -- "0..*" Resource : classifies
 
 ' ---- Events (lookup class goes OUTWARD / right)
-Event "0..*" - "1" EventCategory : classified by
+Event "0..*" -- "1" EventCategory : classified by
 Event "1" -- "0..*" Ticket : offers
 
+User "1" -- "0..*" EventRegistration : registers
 Ticket "1" - "0..*" EventRegistration : selected for
 
 ' ---- Layout hints: keep the user branches side by side
@@ -155,10 +156,10 @@ Donor -[hidden]right- Volunteer
 Volunteer -[hidden]right- Admin
 Qualification -[hidden]right- VolunteerAssignment
 ResourceDistribution -[hidden]right- BeneficiaryCategory
-@enduml
 
 
-@startuml 2-design-patterns
+
+
 ' =====================================================
 ' 2. DESIGN PATTERNS
 ' Left to right: Donation Observer | Strategy | Document Factory
@@ -282,6 +283,11 @@ package "Donation Observer" as DonationObserverPackage {
 
 ' ---------- EVENT OBSERVER ----------
 package "Event Observer" as EventObserverPackage {
+  interface "Subject" as EventSubjectInterface {
+    + addObserver(observer: EventObserver)
+    + removeObserver(observer: EventObserver)
+    + notifyObservers()
+  }
   class EventSubject {
     - observers: List
     + addObserver(observer: EventObserver)
@@ -295,6 +301,7 @@ package "Event Observer" as EventObserverPackage {
     + update(message: String)
   }
 
+  EventSubjectInterface <|.. EventSubject
   EventSubject o-down- "0..*" EventObserver : notifies
   EventObserver <|.. EventEmailNotifier
 }
@@ -338,10 +345,10 @@ DocumentFactory -[hidden]right- EventComponent
 EventComponent -[hidden]right- EventSubject
 
 
-@enduml
 
 
-@startuml 3-layered-architecture
+
+
 ' =====================================================
 ' 3. LAYERED ARCHITECTURE
 ' Each feature reads left to right:
@@ -575,46 +582,35 @@ package "Repositories (Spring Data JPA)" as Repositories {
 
 
 ' ---------- PATTERN COLLABORATORS (collapsed, see diagram 2) ----------
-package "Patterns used by services" as PatternStubs {
-  class DonationStrategyContext
-  interface DonationStrategy
-  abstract class DocumentFactory
-  class ReceiptDocumentFactory
-  class TaxDocumentFactory
-  interface Subject
-  class DonationSubject
-  class EventSubject
-  interface EventComponent
-}
 
 ' ---------- ONE CLEAN CHAIN PER FEATURE ----------
 DonationPage ..> DonationController
-DonationController ..> DonationService
-DonationService ..> DonationRepository
-DonationTypeController ..> DonationTypeService
-DonationTypeService ..> DonationTypeRepository
-DonationService ..> DonationTypeRepository
+DonationController "1" -- "1" DonationService
+DonationService "1" -- "1" DonationRepository
+DonationTypeController "1" -- "1" DonationTypeService
+DonationTypeService "1" -- "1" DonationTypeRepository
+DonationService "1" -- "1" DonationTypeRepository
 
 EventPage ..> EventController
-EventController ..> EventService
-EventService ..> EventRepository
-EventCategoryController ..> EventCategoryService
-EventCategoryService ..> EventCategoryRepository
+EventController "1" -- "1" EventService
+EventService "1" -- "1" EventRepository
+EventCategoryController "1" -- "1" EventCategoryService
+EventCategoryService "1" -- "1" EventCategoryRepository
 
 VolunteerPage ..> VolunteerController
-VolunteerController ..> VolunteerService
-VolunteerService ..> VolunteerRepository
+VolunteerController "1" -- "1" VolunteerService
+VolunteerService "1" -- "1" VolunteerRepository
 
 BeneficiaryPage ..> BeneficiaryController
-BeneficiaryController ..> BeneficiaryService
-BeneficiaryService ..> BeneficiaryRepository
-BeneficiaryCategoryController ..> BeneficiaryCategoryService
-BeneficiaryCategoryService ..> BeneficiaryCategoryRepository
+BeneficiaryController "1" -- "1" BeneficiaryService
+BeneficiaryService "1" -- "1" BeneficiaryRepository
+BeneficiaryCategoryController "1" -- "1" BeneficiaryCategoryService
+BeneficiaryCategoryService "1" -- "1" BeneficiaryCategoryRepository
 
-ResourceController ..> ResourceService
-ResourceService ..> ResourceRepository
-ResourceCategoryController ..> ResourceCategoryService
-ResourceCategoryService ..> ResourceCategoryRepository
+ResourceController "1" -- "1" ResourceService
+ResourceService "1" -- "1" ResourceRepository
+ResourceCategoryController "1" -- "1" ResourceCategoryService
+ResourceCategoryService "1" -- "1" ResourceCategoryRepository
 
 ' ---------- SERVICE -> PATTERN DEPENDENCIES ----------
 DonationService ..> DonationStrategyContext : executes strategy

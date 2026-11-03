@@ -44,8 +44,36 @@ public class VolunteerService {
         return roleRepository.findAll();
     }
 
+    public Role createRole(Role role) {
+        if (role == null || role.getName() == null || role.getName().trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Role name is required");
+        }
+        if (roleRepository.existsByNameIgnoreCase(role.getName().trim())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Role already exists with name: " + role.getName());
+        }
+        role.setName(role.getName().trim());
+        if (role.getDescription() == null) {
+            role.setDescription("");
+        }
+        return roleRepository.save(role);
+    }
+
     public List<Qualification> getAllQualifications() {
         return qualificationRepository.findAll();
+    }
+
+    public Qualification createQualification(Qualification qualification) {
+        if (qualification == null || qualification.getName() == null || qualification.getName().trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Qualification name is required");
+        }
+        if (qualificationRepository.existsByNameIgnoreCase(qualification.getName().trim())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Qualification already exists with name: " + qualification.getName());
+        }
+        qualification.setName(qualification.getName().trim());
+        if (qualification.getDescription() == null) {
+            qualification.setDescription("");
+        }
+        return qualificationRepository.save(qualification);
     }
 
     public Volunteer findVolunteerOrThrow(Long id) {

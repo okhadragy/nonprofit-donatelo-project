@@ -4,7 +4,11 @@ import {
   updateVolunteer,
   deleteVolunteer,
   fetchVolunteerRoles,
+  createVolunteerRole,
   fetchVolunteerQualifications,
+  createVolunteerQualification,
+  assignVolunteerRoles,
+  assignVolunteerQualifications,
   fetchEvents,
   fetchVolunteerAssignmentsByEvent,
   fetchRolesForEvent,
@@ -46,6 +50,9 @@ export default function VolunteerPage() {
 
   // Modals
   const [editingVolunteer, setEditingVolunteer] = useState(null);
+  const [assignVolunteerModal, setAssignVolunteerModal] = useState(null);
+  const [newRoleModal, setNewRoleModal] = useState(null);
+  const [newQualModal, setNewQualModal] = useState(null);
   const [assignmentModal, setAssignmentModal] = useState(null);
   const [historyModal, setHistoryModal] = useState(null);
   const [deletingItem, setDeletingItem] = useState(null);
@@ -152,6 +159,88 @@ export default function VolunteerPage() {
   }, [selectedEventId, activeTab]);
 
   // --- Volunteer Actions ---
+
+  const openAssignVolunteerModal = (v) => {
+    setAssignVolunteerModal({
+      id: v.id,
+      name: v.name,
+      email: v.email,
+      roleIds: v.preferredRoleIds ? [...v.preferredRoleIds] : [],
+      qualificationIds: v.qualificationIds ? [...v.qualificationIds] : [],
+    });
+  };
+
+  const toggleAssignRole = (roleId) => {
+    if (!assignVolunteerModal) return;
+    const current = assignVolunteerModal.roleIds || [];
+    const next = current.includes(roleId)
+      ? current.filter((id) => id !== roleId)
+      : [...current, roleId];
+    setAssignVolunteerModal({ ...assignVolunteerModal, roleIds: next });
+  };
+
+  const toggleAssignQual = (qualId) => {
+    if (!assignVolunteerModal) return;
+    const current = assignVolunteerModal.qualificationIds || [];
+    const next = current.includes(qualId)
+      ? current.filter((id) => id !== qualId)
+      : [...current, qualId];
+    setAssignVolunteerModal({ ...assignVolunteerModal, qualificationIds: next });
+  };
+
+  const saveAssignVolunteer = async (e) => {
+    e.preventDefault();
+    setIsSaving(true);
+    setError(null);
+    try {
+      await assignVolunteerRoles(assignVolunteerModal.id, assignVolunteerModal.roleIds);
+      await assignVolunteerQualifications(
+        assignVolunteerModal.id,
+        assignVolunteerModal.qualificationIds
+      );
+      setAssignVolunteerModal(null);
+      showSuccess("Roles and qualifications assigned successfully!");
+      await applyFilters();
+    } catch (err) {
+      setError(err.message || "Failed to assign roles and qualifications");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const saveNewRole = async (e) => {
+    e.preventDefault();
+    setIsSaving(true);
+    setError(null);
+    try {
+      await createVolunteerRole(newRoleModal);
+      setNewRoleModal(null);
+      showSuccess("New volunteer role created successfully!");
+      const updatedRoles = await fetchVolunteerRoles();
+      setRoles(updatedRoles);
+    } catch (err) {
+      setError(err.message || "Failed to create role");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const saveNewQual = async (e) => {
+    e.preventDefault();
+    setIsSaving(true);
+    setError(null);
+    try {
+      await createVolunteerQualification(newQualModal);
+      setNewQualModal(null);
+      showSuccess("New qualification created successfully!");
+      const updatedQuals = await fetchVolunteerQualifications();
+      setQualifications(updatedQuals);
+    } catch (err) {
+      setError(err.message || "Failed to create qualification");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const openEditVolunteer = (v) => {
     setEditingVolunteer({
@@ -529,6 +618,14 @@ export default function VolunteerPage() {
                       <td className="actions">
                         <button
                           className="btn small"
+                          style={{ background: "#e0f2fe", color: "#0369a1", fontWeight: 600 }}
+                          title="Assign roles and qualifications to this volunteer"
+                          onClick={() => openAssignVolunteerModal(v)}
+                        >
+                          Assign Roles & Skills
+                        </button>
+                        <button
+                          className="btn small"
                           title="View event assignment history"
                           onClick={() => openHistoryModal(v)}
                         >
@@ -758,8 +855,17 @@ export default function VolunteerPage() {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
           {/* Roles List */}
           <section className="panel">
-            <div className="toolbar">
+            <div
+              className="toolbar"
+              style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+            >
               <strong>Available Volunteer Roles ({roles.length})</strong>
+              <button
+                className="btn primary small"
+                onClick={() => setNewRoleModal({ name: "", description: "" })}
+              >
+                + Add Role
+              </button>
             </div>
             <div className="table-wrap">
               {roles.length === 0 ? (
@@ -791,8 +897,17 @@ export default function VolunteerPage() {
 
           {/* Qualifications List */}
           <section className="panel">
-            <div className="toolbar">
+            <div
+              className="toolbar"
+              style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+            >
               <strong>Volunteer Qualifications & Certifications ({qualifications.length})</strong>
+              <button
+                className="btn primary small"
+                onClick={() => setNewQualModal({ name: "", description: "" })}
+              >
+                + Add Qualification
+              </button>
             </div>
             <div className="table-wrap">
               {qualifications.length === 0 ? (
@@ -1126,6 +1241,245 @@ export default function VolunteerPage() {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ASSIGN ROLES & QUALIFICATIONS MODAL */}
+      {assignVolunteerModal && (
+        <div className="overlay" onClick={() => setAssignVolunteerModal(null)}>
+          <div
+            className="modal"
+            style={{ maxWidth: "560px" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2>Assign Roles & Qualifications</h2>
+            <p style={{ margin: "0 0 16px 0", color: "var(--muted)", fontSize: "0.85rem" }}>
+              Update assigned roles and verified qualifications for{" "}
+              <strong>{assignVolunteerModal.name}</strong> ({assignVolunteerModal.email}).
+            </p>
+
+            <form onSubmit={saveAssignVolunteer}>
+              <div>
+                <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>
+                  Volunteer Roles ({assignVolunteerModal.roleIds?.length || 0} selected)
+                </span>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "8px",
+                    marginTop: "6px",
+                    background: "#f8fafb",
+                    padding: "10px",
+                    borderRadius: "6px",
+                    border: "1px solid var(--line)",
+                    maxHeight: "150px",
+                    overflowY: "auto",
+                  }}
+                >
+                  {roles.length === 0 ? (
+                    <span style={{ fontSize: "0.85rem", color: "var(--muted)" }}>No roles available.</span>
+                  ) : (
+                    roles.map((r) => {
+                      const checked = assignVolunteerModal.roleIds.includes(r.id);
+                      return (
+                        <label
+                          key={r.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            fontWeight: 400,
+                            fontSize: "0.85rem",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleAssignRole(r.id)}
+                          />
+                          <span>
+                            <strong>{r.name}</strong>
+                          </span>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              <div style={{ marginTop: "16px" }}>
+                <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>
+                  Qualifications & Skills ({assignVolunteerModal.qualificationIds?.length || 0} selected)
+                </span>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "8px",
+                    marginTop: "6px",
+                    background: "#f8fafb",
+                    padding: "10px",
+                    borderRadius: "6px",
+                    border: "1px solid var(--line)",
+                    maxHeight: "150px",
+                    overflowY: "auto",
+                  }}
+                >
+                  {qualifications.length === 0 ? (
+                    <span style={{ fontSize: "0.85rem", color: "var(--muted)" }}>No qualifications available.</span>
+                  ) : (
+                    qualifications.map((q) => {
+                      const checked = assignVolunteerModal.qualificationIds.includes(q.id);
+                      return (
+                        <label
+                          key={q.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            fontWeight: 400,
+                            fontSize: "0.85rem",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleAssignQual(q.id)}
+                          />
+                          <span>
+                            <strong>{q.name}</strong>
+                          </span>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              <div className="modal-actions" style={{ marginTop: "20px" }}>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => setAssignVolunteerModal(null)}
+                  disabled={isSaving}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn primary" disabled={isSaving}>
+                  {isSaving ? "Saving…" : "Save Assignments"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE NEW ROLE MODAL */}
+      {newRoleModal && (
+        <div className="overlay" onClick={() => setNewRoleModal(null)}>
+          <div
+            className="modal"
+            style={{ maxWidth: "460px" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2>Create Volunteer Role</h2>
+            <form onSubmit={saveNewRole}>
+              <label>
+                Role Name
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. First Aid Officer, Coordinator"
+                  value={newRoleModal.name}
+                  onChange={(e) =>
+                    setNewRoleModal({ ...newRoleModal, name: e.target.value })
+                  }
+                />
+              </label>
+
+              <label style={{ marginTop: "12px" }}>
+                Description
+                <textarea
+                  rows="3"
+                  placeholder="Responsibilities and expectations for this role..."
+                  value={newRoleModal.description}
+                  onChange={(e) =>
+                    setNewRoleModal({ ...newRoleModal, description: e.target.value })
+                  }
+                />
+              </label>
+
+              <div className="modal-actions" style={{ marginTop: "20px" }}>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => setNewRoleModal(null)}
+                  disabled={isSaving}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn primary" disabled={isSaving}>
+                  {isSaving ? "Creating…" : "Create Role"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE NEW QUALIFICATION MODAL */}
+      {newQualModal && (
+        <div className="overlay" onClick={() => setNewQualModal(null)}>
+          <div
+            className="modal"
+            style={{ maxWidth: "460px" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2>Create Qualification / Skill</h2>
+            <form onSubmit={saveNewQual}>
+              <label>
+                Qualification Name
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. CPR Certified, Driver's License"
+                  value={newQualModal.name}
+                  onChange={(e) =>
+                    setNewQualModal({ ...newQualModal, name: e.target.value })
+                  }
+                />
+              </label>
+
+              <label style={{ marginTop: "12px" }}>
+                Description
+                <textarea
+                  rows="3"
+                  placeholder="Required certification details, issuing authority, etc."
+                  value={newQualModal.description}
+                  onChange={(e) =>
+                    setNewQualModal({ ...newQualModal, description: e.target.value })
+                  }
+                />
+              </label>
+
+              <div className="modal-actions" style={{ marginTop: "20px" }}>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => setNewQualModal(null)}
+                  disabled={isSaving}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn primary" disabled={isSaving}>
+                  {isSaving ? "Creating…" : "Create Qualification"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
